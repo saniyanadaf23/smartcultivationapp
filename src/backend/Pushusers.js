@@ -40,7 +40,7 @@ const USERS = [
     email:     "member2@smartcultivation.com",
     password:  "member123",
     role:      "user",
-    deviceId:  "chamber-001",
+    deviceId:  "chamber-002",
   },
   // ── Add more users below if needed ──────────────────────────────
   // {

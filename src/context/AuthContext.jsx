@@ -8,18 +8,20 @@ export function AuthProvider({ children }) {
   const [user, setUser]   = useState(null);
   const [error, setError] = useState("");
 
-  const login = async (email, password) => {
-    try {
-      setError("");
-      const userData = await apiLogin(email, password);
-      setUser(userData); // { id, name, email, role, deviceId }
-      return true;
-    } catch (err) {
-      setError(err.message || "Login failed");
-      return false;
-    }
-  };
+const login = async (email, password) => {
+  try {
+    setError("");
+    const data = await apiLogin(email, password);
 
+    localStorage.setItem("token", data.token); // ✅ ADD
+    setUser(data.user);
+
+    return true;
+  } catch (err) {
+    setError(err.message || "Login failed");
+    return false;
+  }
+};
   const signup = async (name, email, password, role) => {
     try {
       setError("");

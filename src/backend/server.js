@@ -10,12 +10,17 @@
 const express  = require("express");
 const mongoose = require("mongoose");
 const cors     = require("cors");
-const dotenv   = require("dotenv");
+const auth = require("./middleware/auth");
 
+const dotenv   = require("dotenv");
 dotenv.config();
 
-const app = express();
-app.use(cors());
+mongoose.connect(process.env.MONGO_URI);
+const app= express();
+app.use(cors({
+  origin: ["http://localhost:3000", "https://your-frontend.vercel.app"],
+  credentials: true
+}));
 app.use(express.json());
 
 // ── MongoDB Connection ───────────────────────────────────────────────
@@ -91,17 +96,17 @@ function pushToAllClients(data) {
 // Fires instantly when IoT pushes a new document to telemetry
 function startChangeStream() {
   try {
-    const stream = Telemetry.watch(
-      [{ $match: { operationType: "insert" } }],
-      { fullDocument: "updateLookup" }
-    );
-    stream.on("change", (change) => {
-      const doc = change.fullDocument;
-      console.log(`⚡ New reading → deviceId: ${doc.deviceId} | temp: ${doc.temperature} | humidity: ${doc.humidity} | time: ${doc.time}`);
-      pushToAllClients({ type: "new_reading", data: doc });
-    });
-    stream.on("error", (e) => console.error("Change stream error:", e.message));
-    console.log("👀 Watching telemetry collection for new inserts...");
+//    const stream = Telemetry.watch(
+//      [{ $match: { operationType: "insert" } }],
+//      { fullDocument: "updateLookup" }
+//    );
+//    stream.on("change", (change) => {
+//      const doc = change.fullDocument;
+//      console.log(`⚡ New reading → deviceId: ${doc.deviceId} | temp: ${doc.temperature} | humidity: ${doc.humidity} | time: ${doc.time}`);
+//     pushToAllClients({ type: "new_reading", data: doc });
+//    });
+//    stream.on("error", (e) => console.error("Change stream error:", e.message));
+//    console.log("👀 Watching telemetry collection for new inserts...");
   } catch (e) {
     console.error("Could not start change stream:", e.message);
   }
@@ -113,33 +118,53 @@ function startChangeStream() {
 
 // POST /api/auth/login
 // Matches user by email + password, returns user object with deviceId
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email, password: password }).lean();
+    // 🔍 Find user by email only
+    const user = await User.findOne({ email }).lean();
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "User not found" });
     }
 
-    console.log(`🔐 Login: ${user.email} [${user.role}] deviceId: ${user.deviceId}`);
+    // 🔐 Compare hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
 
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // 🔐 Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    console.log(`🔐 Login: ${user.email} [${user.role}]`);
+
+    // ✅ Send user + token
     res.json({
       user: {
-        id:       user._id,
-        name:     user.name,
-        email:    user.email,
-        role:     user.role,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         deviceId: user.deviceId ?? null,
       },
+      token,
     });
+
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
 // POST /api/auth/signup
 app.post("/api/auth/signup", async (req, res) => {
   try {
@@ -149,6 +174,9 @@ app.post("/api/auth/signup", async (req, res) => {
     if (exists) {
       return res.status(400).json({ error: "Email already registered" });
     }
+
+    // 🔐 HASH PASSWORD HERE
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Auto-assign first available device to new users
     let assignedDevice = null;
@@ -160,9 +188,9 @@ app.post("/api/auth/signup", async (req, res) => {
     const newUser = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword, // ✅ FIXED
       role,
-      deviceId:  assignedDevice,
+      deviceId: assignedDevice,
       createdAt: new Date(),
     });
 
@@ -170,10 +198,10 @@ app.post("/api/auth/signup", async (req, res) => {
 
     res.json({
       user: {
-        id:       newUser._id,
-        name:     newUser.name,
-        email:    newUser.email,
-        role:     newUser.role,
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
         deviceId: newUser.deviceId ?? null,
       },
     });
@@ -182,15 +210,13 @@ app.post("/api/auth/signup", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 // ════════════════════════════════════════════════════════════════════
 // SENSOR ROUTES
 // ════════════════════════════════════════════════════════════════════
 
 // GET /api/devices
 // Returns all unique deviceIds  →  ["chamber-001"]
-app.get("/api/devices", async (req, res) => {
-  try {
+app.get("/api/devices", auth, async (req, res) => {  try {
     const devices = await Telemetry.distinct("deviceId");
     console.log("Devices:", devices);
     res.json(devices);
@@ -202,8 +228,7 @@ app.get("/api/devices", async (req, res) => {
 // GET /api/sensors/latest/:deviceId
 // Returns most recent single doc for one device
 // e.g. GET /api/sensors/latest/chamber-001
-app.get("/api/sensors/latest/:deviceId", async (req, res) => {
-  try {
+app.get("/api/sensors/latest/:deviceId", auth, async (req, res) => {  try {
     const { deviceId } = req.params;
     console.log(`Fetching latest for: ${deviceId}`);
 
@@ -227,8 +252,7 @@ app.get("/api/sensors/latest/:deviceId", async (req, res) => {
 
 // GET /api/sensors/history/:deviceId?limit=30
 // Returns last N readings for chart
-app.get("/api/sensors/history/:deviceId", async (req, res) => {
-  try {
+app.get("/api/sensors/history/:deviceId", auth, async (req, res) => {  try {
     const { deviceId } = req.params;
     const limit = parseInt(req.query.limit) || 30;
 
@@ -247,8 +271,7 @@ app.get("/api/sensors/history/:deviceId", async (req, res) => {
 
 // GET /api/sensors/all-latest
 // Admin only: latest reading from EVERY device
-app.get("/api/sensors/all-latest", async (req, res) => {
-  try {
+app.get("/api/sensors/all-latest", auth, async (req, res) => {  try {
     const deviceIds = await Telemetry.distinct("deviceId");
     console.log("All device IDs:", deviceIds);
 
@@ -278,15 +301,25 @@ app.get("/api/health", (_, res) => {
 });
 
 // GET /api/debug  — see raw docs (useful during development)
-app.get("/api/debug", async (req, res) => {
-  try {
-    const telemetry = await Telemetry.find({}).sort({ time: -1 }).limit(3).lean();
-    const users     = await User.find({}).lean();
-    res.json({ telemetry, users });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Debug route (only in development)
+if (process.env.NODE_ENV === "development") {
+  app.get("/api/debug", async (req, res) => {
+    try {
+      const telemetry = await Telemetry
+        .find({})
+        .sort({ time: -1 })
+        .limit(3)
+        .lean();
+
+      res.json({
+        telemetry,
+        message: "Debug data (users hidden for security)",
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+}
 
 // ── Start ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
