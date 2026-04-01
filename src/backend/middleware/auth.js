@@ -5,7 +5,6 @@ module.exports = function (req, res, next) {
 
   if (!header) return res.status(401).json({ message: "No token" });
 
-  // Support both raw token and "Bearer <token>"
   const token = header.startsWith("Bearer ") ? header.slice(7) : header;
 
   try {

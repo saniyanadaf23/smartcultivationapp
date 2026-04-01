@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DeviceConfig from "../pages/Deviceconfig";
+import FirmwareUpload from "../pages/firmwareUpload";
 import { useAuth } from "../context/AuthContext";
 import {
   getLatestReading, getSensorHistory,
@@ -39,6 +40,7 @@ const CHART_META = [
 const NAV_TABS = [
   { key:"dashboard",  label:"Dashboard",        icon:"📊" },
   { key:"config",     label:"Device Config",    icon:"⚙️" },
+  { key:"firmware",   label:"Firmware Update",  icon:"📦", adminOnly: true },
 ];
 
 // ── Relay meta ───────────────────────────────────────────────────────
@@ -727,7 +729,7 @@ export default function Dashboard() {
         <Box sx={{ display:"flex",alignItems:"center",gap:{ xs:1,md:2 } }}>
           {/* Nav tabs — desktop */}
           <Box sx={{ display:{ xs:"none",sm:"flex" },gap:1 }}>
-            {NAV_TABS.map((tab) => (
+            {NAV_TABS.filter(tab => !tab.adminOnly || user.role === "admin").map((tab) => (
               <Box key={tab.key} onClick={() => setActiveTab(tab.key)}
                 sx={{ px:2,py:0.7,borderRadius:"8px",cursor:"pointer",display:"flex",alignItems:"center",gap:0.7,
                   border:`1px solid ${activeTab===tab.key?"rgba(74,222,128,0.4)":"rgba(74,222,128,0.1)"}`,
@@ -762,7 +764,7 @@ export default function Dashboard() {
             <Divider sx={{ borderColor:"rgba(74,222,128,0.1)" }} />
             {/* Mobile nav items in menu */}
             <Box sx={{ display:{ xs:"block",sm:"none" } }}>
-              {NAV_TABS.map((tab) => (
+              {NAV_TABS.filter(tab => !tab.adminOnly || user.role === "admin").map((tab) => (
                 <MenuItem key={tab.key} onClick={() => { setActiveTab(tab.key); setAnchorEl(null); }}
                   sx={{ color:activeTab===tab.key?"#4ade80":"rgba(232,245,233,0.7)",fontSize:13,"&:hover":{ background:"rgba(74,222,128,0.08)" } }}>
                   {tab.icon} &nbsp;{tab.label}
@@ -825,6 +827,11 @@ export default function Dashboard() {
              {/* CONFIG TAB */}
               {activeTab === "config" && (
                 <DeviceConfig deviceId={selectedDevice} />
+              )}
+
+              {/* ══════════ FIRMWARE TAB (admin only) ══════════ */}
+              {activeTab === "firmware" && user.role === "admin" && (
+                <FirmwareUpload />
               )}
 
               {/* ══════════ DASHBOARD TAB ══════════ */}

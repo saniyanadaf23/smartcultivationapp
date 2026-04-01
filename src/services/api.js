@@ -112,3 +112,45 @@ export async function apiSignup(name, email, password, role) {
   if (!res.ok) throw new Error(data.error || "Signup failed");
   return data; // returns { user, token }
 }
+
+// ── Firmware API ─────────────────────────────────────────────────────
+
+export async function getFirmwareInfo() {
+  const res = await fetch(`${BASE}/firmware/info`, {
+    headers: getAuthHeaders(),
+  });
+  if (res.status === 401) throw new Error("Unauthorized - please login again");
+  if (!res.ok) throw new Error("Failed to fetch firmware info");
+  return res.json();
+}
+
+export async function uploadFirmware(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("token");
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${BASE}/firmware/upload`);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (xhr.status >= 400) reject(new Error(data.error || "Upload failed"));
+        else resolve(data);
+      } catch {
+        reject(new Error("Invalid server response"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(formData);
+  });
+}
