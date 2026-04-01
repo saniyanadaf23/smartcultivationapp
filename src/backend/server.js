@@ -17,7 +17,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["https://growio-eight.vercel.app/"],
+    origin: ["https://growio-eight.vercel.app"],
     credentials: true,
   })
 );
