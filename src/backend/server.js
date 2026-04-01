@@ -321,8 +321,10 @@ app.get("/api/health", (req, res) => {
 const PORT = process.env.PORT || 5000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-console.log("─────────────────────────────────────────");
-console.log(`🚀 Server → ${BASE_URL}`);
-console.log(`❤️ Health → ${BASE_URL}api/health`);
-console.log(`📡 SSE → ${BASE_URL}api/live`);
-console.log("─────────────────────────────────────────");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("─────────────────────────────────────────");
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`❤️ Health → ${BASE_URL}/api/health`);
+  console.log(`📡 SSE → ${BASE_URL}/api/live`);
+  console.log("─────────────────────────────────────────");
+});
