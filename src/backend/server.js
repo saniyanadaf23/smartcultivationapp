@@ -273,7 +273,7 @@ app.post(
           deviceId,
           firmware: {
             version,
-            url: "http://192.168.1.4:5000/firmware/esp32.bin",
+            url: process.env.BASE_URL + "/firmware/esp32.bin",
             updatedAt: new Date(),
           },
         },
@@ -319,10 +319,10 @@ app.get("/api/health", (req, res) => {
 // START
 // ════════════════════════════════════════════════════════════════════
 
-app.listen(5000, () => {
-  console.log("─────────────────────────────────────────");
-  console.log(`🚀 Server → http://localhost:5000`);
-  console.log(`❤️ Health → http://localhost:5000/api/health`);
-  console.log(`📡 SSE → http://localhost:5000/api/live`);
-  console.log("─────────────────────────────────────────");
-});
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+
+console.log("─────────────────────────────────────────");
+console.log(`🚀 Server → ${BASE_URL}`);
+console.log(`❤️ Health → ${BASE_URL}/api/health`);
+console.log(`📡 SSE → ${BASE_URL}/api/live`);
+console.log("─────────────────────────────────────────");
