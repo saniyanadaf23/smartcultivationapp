@@ -5,7 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const AWS = require("aws-sdk");
 const auth = require("../backend/middleware/auth");
-
+console.log("🔥 NEW S3 ROUTE LOADED");
 module.exports = function (mongoose) {
   const router = express.Router();
 
@@ -59,12 +59,14 @@ module.exports = function (mongoose) {
   // ════════════════════════════════════════════════════════════════════
   // POST /api/firmware/upload
   // ════════════════════════════════════════════════════════════════════
+
   router.post(
     "/upload",
     auth,
     adminOnly,
     upload.single("file"),
     async (req, res) => {
+      console.log("🔥 NEW S3 ROUTE LOADED");
       if (!req.file) {
         return res.status(400).json({ error: "No file received" });
       }
