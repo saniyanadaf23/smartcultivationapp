@@ -7,9 +7,10 @@ const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const path = require("path");
-
+const AWS = require("aws-sdk");
 // ✅ RESTORED ORIGINAL (IMPORTANT)
 const auth = require("./middleware/auth");
+
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY,
   secretAccessKey: process.env.AWS_SECRET_KEY,
@@ -256,7 +257,7 @@ app.post("/api/config/:deviceId", auth, async (req, res) => {
 // ════════════════════════════════════════════════════════════════════
 // FIRMWARE
 // ════════════════════════════════════════════════════════════════════
-const AWS = require("aws-sdk");
+
 const multer = require("multer");
 const fs = require("fs");
 const os = require("os");
