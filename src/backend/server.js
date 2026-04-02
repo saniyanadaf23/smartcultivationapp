@@ -117,10 +117,6 @@ async function pollForNewReadings() {
     if (lastSeenTime[id] !== time) {
       lastSeenTime[id] = time;
 
-      console.log(
-        `⚡ New reading → ${doc.deviceId} | temp: ${doc.temperature}`
-      );
-
       sseClients.forEach((c) => {
         c.write(`data: ${JSON.stringify(doc)}\n\n`);
       });
@@ -154,6 +150,9 @@ app.post("/api/auth/login", async (req, res) => {
 // ════════════════════════════════════════════════════════════════════
 // SENSOR ROUTES (RESTORED)
 // ════════════════════════════════════════════════════════════════════
+app.get("/", (req, res) => {
+  res.send("Server is running ✅");
+});
 
 app.get("/api/devices", auth, async (req, res) => {
   const devices = await Telemetry.distinct("deviceId");
