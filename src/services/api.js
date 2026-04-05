@@ -49,6 +49,49 @@ export async function getSensorHistoryRange(deviceId, { days = 3, limit } = {}) 
   return res.json();
 }
 
+export async function getEvidenceImages(deviceId) {
+  const res = await fetch(`${BASE}/images/${deviceId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (res.status === 401) throw new Error("Unauthorized - please login again");
+  if (!res.ok) throw new Error("Failed to fetch evidence images");
+  return res.json();
+}
+
+export async function uploadEvidenceImage(deviceId, file) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const token = localStorage.getItem("token");
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", `${BASE}/images/${deviceId}`);
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+
+        if (xhr.status >= 400) {
+          reject(new Error(data.error || "Image upload failed"));
+        } else {
+          resolve(data.image);
+        }
+      } catch {
+        reject(new Error("Invalid server response"));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error during image upload"));
+    xhr.send(formData);
+  });
+}
+
 export async function getAllLatest() {
   const res = await fetch(`${BASE}/sensors/all-latest`, {
     headers: getAuthHeaders(),

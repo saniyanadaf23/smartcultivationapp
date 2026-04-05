@@ -89,6 +89,22 @@ const configSchema = new mongoose.Schema(
 
 const Config = mongoose.model("Config", configSchema);
 
+const imageSchema = new mongoose.Schema(
+  {
+    deviceId: String,
+    fileName: String,
+    contentType: String,
+    imageData: Buffer,
+    uploadedAt: { type: Date, default: Date.now },
+    telemetry: { type: Object, default: null },
+  },
+  {
+    collection: "images",
+  }
+);
+
+const ImageRecord = mongoose.model("ImageRecord", imageSchema);
+
 // ════════════════════════════════════════════════════════════════════
 // SSE
 // ════════════════════════════════════════════════════════════════════
@@ -275,16 +291,93 @@ app.post("/api/config/:deviceId", auth, async (req, res) => {
 // FIRMWARE
 // ════════════════════════════════════════════════════════════════════
 
+function buildImageResponse(doc) {
+  return {
+    _id: doc._id,
+    deviceId: doc.deviceId,
+    fileName: doc.fileName,
+    contentType: doc.contentType,
+    uploadedAt: doc.uploadedAt,
+    telemetry: doc.telemetry || null,
+    imageBase64: doc.imageData ? doc.imageData.toString("base64") : null,
+  };
+}
+
+async function findNearestTelemetry(deviceId, targetTime) {
+  const [before, after] = await Promise.all([
+    Telemetry.findOne({ deviceId, time: { $lte: targetTime } }).sort({ time: -1 }).lean(),
+    Telemetry.findOne({ deviceId, time: { $gte: targetTime } }).sort({ time: 1 }).lean(),
+  ]);
+
+  if (!before) return after || null;
+  if (!after) return before || null;
+
+  const beforeDiff = Math.abs(new Date(before.time).getTime() - targetTime.getTime());
+  const afterDiff = Math.abs(new Date(after.time).getTime() - targetTime.getTime());
+
+  return beforeDiff <= afterDiff ? before : after;
+}
+
 const multer = require("multer");
 const fs = require("fs");
 const os = require("os");
 
 const upload = multer({ dest: os.tmpdir() });
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+});
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY,
   secretAccessKey: process.env.AWS_SECRET_KEY,
   region: process.env.AWS_REGION,
+});
+
+app.get("/api/images/:deviceId", auth, async (req, res) => {
+  try {
+    const images = await ImageRecord.find({ deviceId: req.params.deviceId })
+      .sort({ uploadedAt: -1 })
+      .limit(20);
+
+    res.json(images.map(buildImageResponse));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/images/:deviceId", auth, imageUpload.single("image"), async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No image uploaded" });
+    }
+
+    if (!req.file.mimetype?.startsWith("image/")) {
+      return res.status(400).json({ error: "Only image uploads are allowed" });
+    }
+
+    const uploadedAt = new Date();
+    const telemetry = await findNearestTelemetry(deviceId, uploadedAt);
+
+    const imageRecord = await ImageRecord.create({
+      deviceId,
+      fileName: req.file.originalname,
+      contentType: req.file.mimetype,
+      imageData: req.file.buffer,
+      uploadedAt,
+      telemetry,
+    });
+
+    res.json({
+      success: true,
+      image: buildImageResponse(imageRecord),
+    });
+  } catch (err) {
+    console.error("Image upload error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post(

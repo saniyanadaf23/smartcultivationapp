@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -11,7 +12,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getAllLatest, getSensorHistoryRange } from "../services/api";
+import {
+  getAllLatest,
+  getEvidenceImages,
+  getSensorHistoryRange,
+  uploadEvidenceImage,
+} from "../services/api";
 
 const SENSOR_FIELDS = [
   { key: "temperature", label: "Temperature", unit: "°C" },
@@ -74,6 +80,38 @@ function RelayPill({ label, value }) {
   );
 }
 
+function SensorGrid({ record }) {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
+        gap: 1.5,
+        mb: 2,
+      }}
+    >
+      {SENSOR_FIELDS.map((field) => (
+        <Box
+          key={field.key}
+          sx={{
+            p: 1.5,
+            borderRadius: "14px",
+            background: "rgba(74,222,128,0.04)",
+            border: "1px solid rgba(74,222,128,0.08)",
+          }}
+        >
+          <Typography sx={{ fontSize: 11, color: "rgba(232,245,233,0.4)", mb: 0.5 }}>
+            {field.label}
+          </Typography>
+          <Typography sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15 }}>
+            {formatValue(record?.[field.key], field.unit)}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 export default function History() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -81,8 +119,14 @@ export default function History() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const [records, setRecords] = useState([]);
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState("");
+  const [imageSuccess, setImageSuccess] = useState("");
 
   const loadRecords = useCallback(async (deviceId) => {
     if (!deviceId) return;
@@ -97,6 +141,22 @@ export default function History() {
       setRecords([]);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadImages = useCallback(async (deviceId) => {
+    if (!deviceId) return;
+
+    try {
+      setImagesLoading(true);
+      setImageError("");
+      const data = await getEvidenceImages(deviceId);
+      setImages(data);
+    } catch (err) {
+      setImageError(err.message || "Failed to load evidence images");
+      setImages([]);
+    } finally {
+      setImagesLoading(false);
     }
   }, []);
 
@@ -120,27 +180,40 @@ export default function History() {
           setSelectedDevice(initialDevice);
 
           if (initialDevice) {
-            const data = await getSensorHistoryRange(initialDevice, { days: 3 });
-            setRecords(data);
+            const [historyData, imageData] = await Promise.all([
+              getSensorHistoryRange(initialDevice, { days: 3 }),
+              getEvidenceImages(initialDevice),
+            ]);
+            setRecords(historyData);
+            setImages(imageData);
           } else {
             setRecords([]);
+            setImages([]);
           }
         } else {
           setDevices(user.deviceId ? [user.deviceId] : []);
           setSelectedDevice(user.deviceId || "");
 
           if (user.deviceId) {
-            const data = await getSensorHistoryRange(user.deviceId, { days: 3 });
-            setRecords(data);
+            const [historyData, imageData] = await Promise.all([
+              getSensorHistoryRange(user.deviceId, { days: 3 }),
+              getEvidenceImages(user.deviceId),
+            ]);
+            setRecords(historyData);
+            setImages(imageData);
           } else {
             setRecords([]);
+            setImages([]);
           }
         }
       } catch (err) {
         setError(err.message || "Failed to load history");
+        setImageError(err.message || "Failed to load evidence images");
         setRecords([]);
+        setImages([]);
       } finally {
         setLoading(false);
+        setImagesLoading(false);
       }
     };
 
@@ -151,7 +224,8 @@ export default function History() {
     if (!user || !selectedDevice) return;
     if (user.role !== "admin") return;
     loadRecords(selectedDevice);
-  }, [loadRecords, selectedDevice, user]);
+    loadImages(selectedDevice);
+  }, [loadImages, loadRecords, selectedDevice, user]);
 
   const summary = useMemo(() => {
     if (!records.length) return null;
@@ -201,7 +275,7 @@ export default function History() {
               fontFamily: "'JetBrains Mono', monospace",
             }}
           >
-            Last 3 days of sensor and relay data
+            Last 3 days of sensor, relay, and mushroom evidence data
           </Typography>
         </Box>
 
@@ -313,18 +387,203 @@ export default function History() {
             )}
           </Box>
 
-          <Button
-            onClick={() => loadRecords(selectedDevice)}
-            disabled={!selectedDevice || loading}
-            sx={{
-              color: "#fbbf24",
-              border: "1px solid rgba(251,191,36,0.22)",
-              borderRadius: "10px",
-              px: 2,
-            }}
-          >
-            Refresh
-          </Button>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <Button
+              onClick={() => loadRecords(selectedDevice)}
+              disabled={!selectedDevice || loading}
+              sx={{
+                color: "#fbbf24",
+                border: "1px solid rgba(251,191,36,0.22)",
+                borderRadius: "10px",
+                px: 2,
+              }}
+            >
+              Refresh History
+            </Button>
+            <Button
+              onClick={() => loadImages(selectedDevice)}
+              disabled={!selectedDevice || imagesLoading}
+              sx={{
+                color: "#38bdf8",
+                border: "1px solid rgba(56,189,248,0.22)",
+                borderRadius: "10px",
+                px: 2,
+              }}
+            >
+              Refresh Evidence
+            </Button>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            mb: 3,
+            p: 2.5,
+            borderRadius: "18px",
+            border: "1px solid rgba(56,189,248,0.14)",
+            background: "linear-gradient(180deg, rgba(8,18,24,0.92), rgba(8,15,10,0.82))",
+          }}
+        >
+          <Typography sx={{ fontSize: 20, mb: 0.7 }}>Mushroom Evidence</Typography>
+          <Typography sx={{ fontSize: 12, color: "rgba(232,245,233,0.45)", mb: 2 }}>
+            Upload a mushroom image as evidence. The system saves it in MongoDB `images` and links it with the nearest telemetry reading at upload time.
+          </Typography>
+
+          <Box sx={{ display: "flex", gap: 1.2, flexWrap: "wrap", alignItems: "center", mb: 1.5 }}>
+            <Button
+              component="label"
+              sx={{
+                color: "#e8f5e9",
+                border: "1px solid rgba(74,222,128,0.18)",
+                borderRadius: "10px",
+                px: 2,
+              }}
+            >
+              Choose Image
+              <input
+                hidden
+                type="file"
+                accept="image/*"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+              />
+            </Button>
+
+            <Typography sx={{ fontSize: 12, color: "rgba(232,245,233,0.5)" }}>
+              {selectedFile ? selectedFile.name : "No image selected"}
+            </Typography>
+
+            <Button
+              onClick={async () => {
+                if (!selectedDevice || !selectedFile) return;
+
+                try {
+                  setUploadingImage(true);
+                  setImageError("");
+                  setImageSuccess("");
+                  const uploaded = await uploadEvidenceImage(selectedDevice, selectedFile);
+                  setImages((prev) => [uploaded, ...prev]);
+                  setSelectedFile(null);
+                  setImageSuccess("Evidence image uploaded successfully");
+                } catch (err) {
+                  setImageError(err.message || "Failed to upload image");
+                } finally {
+                  setUploadingImage(false);
+                }
+              }}
+              disabled={!selectedDevice || !selectedFile || uploadingImage}
+              sx={{
+                color: "#020c04",
+                background: "linear-gradient(135deg,#4ade80,#86efac)",
+                borderRadius: "10px",
+                px: 2.5,
+                "&:hover": { background: "linear-gradient(135deg,#4ade80,#bbf7d0)" },
+                "&.Mui-disabled": { color: "rgba(2,12,4,0.4)", background: "rgba(74,222,128,0.3)" },
+              }}
+            >
+              {uploadingImage ? "Uploading..." : "Upload Evidence"}
+            </Button>
+          </Box>
+
+          {imageSuccess && <Alert severity="success" sx={{ mb: 1.5 }}>{imageSuccess}</Alert>}
+          {imageError && <Alert severity="error" sx={{ mb: 1.5 }}>{imageError}</Alert>}
+
+          {imagesLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <CircularProgress sx={{ color: "#38bdf8" }} />
+            </Box>
+          ) : images.length === 0 ? (
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: "14px",
+                border: "1px dashed rgba(56,189,248,0.18)",
+                background: "rgba(56,189,248,0.04)",
+              }}
+            >
+              <Typography sx={{ color: "rgba(232,245,233,0.55)" }}>
+                No evidence images uploaded for this device yet.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: "grid", gap: 2 }}>
+              {images.map((image) => (
+                <Box
+                  key={image._id}
+                  sx={{
+                    p: 2,
+                    borderRadius: "16px",
+                    border: "1px solid rgba(56,189,248,0.12)",
+                    background: "rgba(8,15,10,0.72)",
+                    display: "grid",
+                    gap: 2,
+                    gridTemplateColumns: { xs: "1fr", md: "320px 1fr" },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={`data:${image.contentType};base64,${image.imageBase64}`}
+                    alt={image.fileName || "Evidence"}
+                    sx={{
+                      width: "100%",
+                      maxHeight: 320,
+                      objectFit: "cover",
+                      borderRadius: "14px",
+                      border: "1px solid rgba(56,189,248,0.15)",
+                    }}
+                  />
+
+                  <Box>
+                    <Typography sx={{ fontSize: 18, mb: 0.4 }}>
+                      {image.fileName || "Mushroom evidence"}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: 12,
+                        color: "#38bdf8",
+                        fontFamily: "'JetBrains Mono', monospace",
+                        mb: 1.5,
+                      }}
+                    >
+                      Uploaded: {formatDateTime(image.uploadedAt)}
+                    </Typography>
+
+                    <Typography sx={{ fontSize: 13, color: "rgba(232,245,233,0.55)", mb: 1 }}>
+                      Nearest sensor snapshot at upload time
+                    </Typography>
+
+                    {image.telemetry ? (
+                      <>
+                        <Typography
+                          sx={{
+                            fontSize: 12,
+                            color: "#4ade80",
+                            fontFamily: "'JetBrains Mono', monospace",
+                            mb: 1.5,
+                          }}
+                        >
+                          Sensor timestamp: {formatDateTime(image.telemetry.time)}
+                        </Typography>
+                        <SensorGrid record={image.telemetry} />
+                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                          {RELAY_FIELDS.map((field) => (
+                            <RelayPill
+                              key={field.key}
+                              label={field.label}
+                              value={image.telemetry?.[field.key]}
+                            />
+                          ))}
+                        </Box>
+                      </>
+                    ) : (
+                      <Typography sx={{ color: "rgba(232,245,233,0.45)" }}>
+                        No nearby telemetry reading was found for this upload.
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
 
         {error && (
@@ -401,33 +660,7 @@ export default function History() {
 
                 <Divider sx={{ borderColor: "rgba(74,222,128,0.08)", mb: 2 }} />
 
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
-                    gap: 1.5,
-                    mb: 2,
-                  }}
-                >
-                  {SENSOR_FIELDS.map((field) => (
-                    <Box
-                      key={field.key}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: "14px",
-                        background: "rgba(74,222,128,0.04)",
-                        border: "1px solid rgba(74,222,128,0.08)",
-                      }}
-                    >
-                      <Typography sx={{ fontSize: 11, color: "rgba(232,245,233,0.4)", mb: 0.5 }}>
-                        {field.label}
-                      </Typography>
-                      <Typography sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15 }}>
-                        {formatValue(record[field.key], field.unit)}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
+                <SensorGrid record={record} />
 
                 <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                   {RELAY_FIELDS.map((field) => (
