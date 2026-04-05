@@ -40,7 +40,7 @@ const TEAM = [
     name:"Saniya",
     role:"Frontend Developer",
     color:"#4ade80",
-    imageUrl:"https://api.dicebear.com/9.x/adventurer/svg?seed=Saniya",
+    imageUrl:"/team/saniya.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -48,7 +48,7 @@ const TEAM = [
     name:"Unnati",
     role:"Backend Developer",
     color:"#34d399",
-    imageUrl:"https://api.dicebear.com/9.x/adventurer/svg?seed=Unnati",
+    imageUrl:"/team/unnati.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -56,7 +56,7 @@ const TEAM = [
     name:"Darshan",
     role:"IoT & Hardware",
     color:"#6ee7b7",
-    imageUrl:"https://api.dicebear.com/9.x/adventurer/svg?seed=Darshan",
+    imageUrl:"/team/darshan.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -64,7 +64,7 @@ const TEAM = [
     name:"Vikas",
     role:"Database & API",
     color:"#a7f3d0",
-    imageUrl:"https://api.dicebear.com/9.x/adventurer/svg?seed=Vikas",
+    imageUrl:"/team/vikas.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -72,7 +72,7 @@ const TEAM = [
     name:"Aditya",
     role:"DevOps & Deployment",
     color:"#bbf7d0",
-    imageUrl:"https://api.dicebear.com/9.x/adventurer/svg?seed=Aditya",
+    imageUrl:"/team/aditya.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -266,9 +266,9 @@ export default function Home() {
         .cta-shine::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent); transform:translateX(-100%); transition:transform 0.55s; }
         .cta-shine:hover::before { transform:translateX(100%); }
         .team-card { transition: all 0.32s cubic-bezier(.22,1,.36,1); }
-        .team-card:hover { transform: translateY(-8px); border-color: rgba(96,165,250,0.28) !important; box-shadow: 0 28px 60px rgba(0,0,0,0.42) !important; }
-        .team-card:hover .team-profile-ring { box-shadow: 0 0 0 8px rgba(96,165,250,0.08); transform: scale(1.02); }
-        .team-card:hover .team-name { color: #7dd3fc !important; }
+        .team-card:hover { transform: translateY(-8px); border-color: rgba(74,222,128,0.24) !important; box-shadow: 0 28px 60px rgba(0,0,0,0.42) !important; }
+        .team-card:hover .team-profile-ring { box-shadow: 0 0 0 8px rgba(74,222,128,0.08); transform: scale(1.02); }
+        .team-card:hover .team-name { color: #86efac !important; }
         .team-social { transition: all 0.25s cubic-bezier(.22,1,.36,1); }
         .team-social:hover { transform: translateY(-2px) scale(1.08); }
         .chip { transition: all 0.2s; cursor:default; }
@@ -706,32 +706,35 @@ export default function Home() {
           borderTop:"1px solid rgba(74,222,128,0.06)",
           position:"relative",
           overflow:"hidden",
-          background:"radial-gradient(circle at top, rgba(30,64,175,0.16), transparent 30%), linear-gradient(180deg, #040912 0%, #08111e 48%, #050b14 100%)",
+          background:"radial-gradient(circle at top, rgba(45,106,79,0.12), transparent 30%), linear-gradient(180deg, #020c04 0%, #07120b 48%, #020c04 100%)",
         }}
       >
         <Box
           sx={{
             position:"absolute",
             inset:0,
-            opacity:0.35,
-            backgroundImage:"radial-gradient(circle at 1px 1px, rgba(125,211,252,0.18) 1px, transparent 0)",
+            opacity:0.28,
+            backgroundImage:"radial-gradient(circle at 1px 1px, rgba(74,222,128,0.14) 1px, transparent 0)",
             backgroundSize:"20px 20px",
             pointerEvents:"none",
           }}
         />
-        <Box sx={{ position:"absolute",top:"10%",left:"50%",transform:"translateX(-50%)",width:780,height:780,borderRadius:"50%",background:"radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 68%)",pointerEvents:"none" }} />
+        <Box sx={{ position:"absolute",top:"10%",left:"50%",transform:"translateX(-50%)",width:780,height:780,borderRadius:"50%",background:"radial-gradient(circle, rgba(74,222,128,0.09) 0%, transparent 68%)",pointerEvents:"none" }} />
         <Container maxWidth={false} sx={{ position:"relative",zIndex:1,px:{ xs:3,md:4,lg:6 } }}>
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }}>
             <Box sx={{ textAlign:"center",maxWidth:980,mx:"auto",mb:{ xs:6,md:8 } }}>
-              <Box sx={{ display:"inline-flex",alignItems:"center",gap:1,px:2.2,py:1,borderRadius:"999px",background:"rgba(30,64,175,0.28)",border:"1px solid rgba(96,165,250,0.18)",mb:3 }}>
+              <Box sx={{ display:"inline-flex",alignItems:"center",gap:1,px:2.2,py:1,borderRadius:"999px",background:"rgba(74,222,128,0.1)",border:"1px solid rgba(74,222,128,0.14)",mb:3 }}>
                 <Typography sx={{ fontSize:14 }}>👤</Typography>
-                <Typography className="fs" sx={{ fontSize:13,fontWeight:600,color:"#60a5fa" }}>Meet Our Team</Typography>
+                <Typography className="fs" sx={{ fontSize:13,fontWeight:600,color:"#86efac" }}>Meet Our Team</Typography>
               </Box>
               <Typography className="fs" sx={{ fontSize:{ xs:"2.5rem",md:"4.2rem",lg:"5rem" },fontWeight:700,color:"#f8fafc",lineHeight:1.04,mb:2.5,letterSpacing:"-0.04em" }}>
                 Our Exceptional Team
               </Typography>
-              <Typography className="fs" sx={{ fontSize:{ xs:17,md:20 },color:"rgba(226,232,240,0.86)",lineHeight:1.7,maxWidth:1180,mx:"auto" }}>
+              <Typography className="fs" sx={{ fontSize:{ xs:17,md:20 },color:"rgba(232,245,233,0.78)",lineHeight:1.7,maxWidth:1180,mx:"auto",mb:1.5 }}>
                 Meet our outstanding team, a synergy of talent, creativity, and dedication, crafting success together with passion and innovation.
+              </Typography>
+              <Typography className="fm" sx={{ fontSize:11,color:"rgba(74,222,128,0.56)",letterSpacing:0.8 }}>
+                Add your own photos in `public/team/` and update the `imageUrl` values in the team list.
               </Typography>
             </Box>
           </motion.div>
@@ -746,9 +749,9 @@ export default function Home() {
                       p:{ xs:3,md:3.5 },
                       minHeight:420,
                       borderRadius:"26px",
-                      border:"1px solid rgba(148,163,184,0.14)",
-                      background:"linear-gradient(180deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94))",
-                      boxShadow:"0 10px 30px rgba(2,6,23,0.4)",
+                      border:"1px solid rgba(74,222,128,0.1)",
+                      background:"linear-gradient(180deg, rgba(8,15,10,0.96), rgba(7,18,11,0.94))",
+                      boxShadow:"0 10px 30px rgba(0,0,0,0.36)",
                       display:"flex",
                       flexDirection:"column",
                       alignItems:"center",
@@ -763,32 +766,53 @@ export default function Home() {
                         borderRadius:"50%",
                         p:"6px",
                         mb:3,
-                        background:`linear-gradient(135deg, ${m.color}, #f59e0b 65%)`,
+                        background:`linear-gradient(135deg, ${m.color}, #1a5c3a 65%)`,
                         transition:"all 0.32s cubic-bezier(.22,1,.36,1)",
                       }}
                     >
                       <Box
-                        component="img"
-                        src={m.imageUrl}
-                        alt={m.name}
+                        component={m.imageUrl ? "img" : "div"}
+                        src={m.imageUrl || undefined}
+                        alt={m.imageUrl ? m.name : undefined}
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                          const next = event.currentTarget.nextSibling;
+                          if (next) next.style.display = "flex";
+                        }}
                         sx={{
                           width:"100%",
                           height:"100%",
                           borderRadius:"50%",
                           objectFit:"cover",
                           display:"block",
-                          background:"#0f172a",
-                          border:"4px solid rgba(15,23,42,0.95)",
+                          background:"#07120b",
+                          border:"4px solid rgba(7,18,11,0.95)",
                         }}
                       />
+                      <Box
+                        sx={{
+                          display:m.imageUrl ? "none" : "flex",
+                          width:"100%",
+                          height:"100%",
+                          borderRadius:"50%",
+                          alignItems:"center",
+                          justifyContent:"center",
+                          background:"radial-gradient(circle, rgba(74,222,128,0.18), rgba(7,18,11,0.95))",
+                          border:"4px solid rgba(7,18,11,0.95)",
+                        }}
+                      >
+                        <Typography className="fd" sx={{ fontSize:40,fontWeight:700,color:"#e8f5e9" }}>
+                          {m.name[0]}
+                        </Typography>
+                      </Box>
                     </Box>
 
                     <Typography className="team-name fs" sx={{ fontSize:{ xs:18,md:20 },fontWeight:700,color:"#f8fafc",mb:1,transition:"color 0.25s ease" }}>
                       {m.name}
                     </Typography>
 
-                    <Box sx={{ px:2,py:0.8,borderRadius:"999px",background:"rgba(51,65,85,0.82)",mb:3 }}>
-                      <Typography className="fs" sx={{ fontSize:13,fontWeight:600,color:"rgba(226,232,240,0.95)" }}>
+                    <Box sx={{ px:2,py:0.8,borderRadius:"999px",background:"rgba(29,78,48,0.42)",border:"1px solid rgba(74,222,128,0.1)",mb:3 }}>
+                      <Typography className="fs" sx={{ fontSize:13,fontWeight:600,color:"rgba(232,245,233,0.95)" }}>
                         {m.role}
                       </Typography>
                     </Box>
@@ -808,10 +832,10 @@ export default function Home() {
                           display:"flex",
                           alignItems:"center",
                           justifyContent:"center",
-                          color:"rgba(226,232,240,0.72)",
-                          background:"rgba(51,65,85,0.7)",
-                          border:"1px solid rgba(148,163,184,0.12)",
-                          "&:hover":{ color:"#fff", background:"#2563eb" },
+                          color:"rgba(232,245,233,0.72)",
+                          background:"rgba(29,78,48,0.36)",
+                          border:"1px solid rgba(74,222,128,0.1)",
+                          "&:hover":{ color:"#fff", background:"#0a66c2" },
                         }}
                       >
                         <LinkedInIcon />
@@ -830,9 +854,9 @@ export default function Home() {
                           display:"flex",
                           alignItems:"center",
                           justifyContent:"center",
-                          color:"rgba(226,232,240,0.72)",
-                          background:"rgba(51,65,85,0.7)",
-                          border:"1px solid rgba(148,163,184,0.12)",
+                          color:"rgba(232,245,233,0.72)",
+                          background:"rgba(29,78,48,0.36)",
+                          border:"1px solid rgba(74,222,128,0.1)",
                           "&:hover":{ color:"#fff", background:"#111827" },
                         }}
                       >
