@@ -27,3 +27,18 @@ backend/.env
 src/backend/.env
 
 src/backend/node_modules/
+
+.env.production
+.env.production.example
+
+
+# Build files
+build/
+dist/
+app-build/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+
