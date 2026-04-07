@@ -58,6 +58,10 @@ const DOWNLOADS = [
   },
 ];
 
+function isExternalDownload(href) {
+  return /^https?:\/\//i.test(href);
+}
+
 const TEAM = [
   {
     name:"Saniya",
@@ -193,6 +197,7 @@ function GitHubIcon() {
 ───────────────────────────────────────────── */
 export default function Home() {
   const navigate = useNavigate();
+  const [downloadAvailability, setDownloadAvailability] = useState({});
 
   /* cursor glow */
   const mouseX = useMotionValue(400);
@@ -256,6 +261,40 @@ export default function Home() {
     const drift = +(Math.sin(tick * 0.7 + i * 1.3) * 0.4).toFixed(1);
     return (s.value + drift).toFixed(i === 3 ? 0 : 1);
   });
+
+  useEffect(() => {
+    let active = true;
+
+    const checkDownloads = async () => {
+      const results = {};
+
+      await Promise.all(
+        DOWNLOADS.map(async (item) => {
+          if (isExternalDownload(item.href)) {
+            results[item.key] = true;
+            return;
+          }
+
+          try {
+            const response = await fetch(item.href, { method: "HEAD" });
+            results[item.key] = response.ok;
+          } catch {
+            results[item.key] = false;
+          }
+        })
+      );
+
+      if (active) {
+        setDownloadAvailability(results);
+      }
+    };
+
+    checkDownloads();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <Box sx={{ background: "#020c04", color: "#e8f5e9", overflowX: "hidden" }}>
@@ -735,6 +774,11 @@ export default function Home() {
           <Grid container spacing={2.5}>
             {DOWNLOADS.map((item, i) => (
               <Grid item xs={12} md={6} key={item.key}>
+                {(() => {
+                  const isExternal = isExternalDownload(item.href);
+                  const isReady = downloadAvailability[item.key] ?? isExternal;
+
+                  return (
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }} custom={i * 0.15}>
                   <Box sx={{ p:{ xs:3,md:3.5 },borderRadius:"18px",border:"1px solid rgba(74,222,128,0.1)",background:"rgba(255,255,255,0.015)",backdropFilter:"blur(12px)",height:"100%",display:"flex",flexDirection:"column" }}>
                     <Box sx={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",mb:2.5,gap:2 }}>
@@ -764,14 +808,20 @@ export default function Home() {
                     </Box>
 
                     <Typography className="fs" sx={{ fontSize:13,color:"rgba(232,245,233,0.4)",lineHeight:1.8,mb:3,flex:1 }}>
-                      Place the installer file in the matching `public/downloads/` path or set a hosted URL in your environment variables.
+                      {isReady
+                        ? "The button will download the installer directly. For local builds, place the file in the matching public/downloads path."
+                        : "This build file is not present yet. Add it to the matching public/downloads path or provide a hosted direct-download URL."}
                     </Typography>
 
                     <Button
-                      component="a"
-                      href={item.href}
-                      target="_blank"
-                      rel="noreferrer"
+                      {...(isReady
+                        ? {
+                            component: "a",
+                            href: item.href,
+                            ...(isExternal ? { target: "_blank", rel: "noreferrer" } : { download: true }),
+                          }
+                        : {})}
+                      disabled={!isReady}
                       sx={{
                         alignSelf:"flex-start",
                         px:2.5,
@@ -782,12 +832,18 @@ export default function Home() {
                         color:item.color,
                         border:`1px solid ${item.color}40`,
                         "&:hover":{ background:`${item.color}12` },
+                        "&.Mui-disabled": {
+                          color:"rgba(232,245,233,0.28)",
+                          borderColor:"rgba(232,245,233,0.12)",
+                        },
                       }}
                     >
-                      {item.cta}
+                      {isReady ? item.cta : `${item.name} not added yet`}
                     </Button>
                   </Box>
                 </motion.div>
+                  );
+                })()}
               </Grid>
             ))}
           </Grid>

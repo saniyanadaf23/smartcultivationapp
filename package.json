@@ -2,7 +2,13 @@
   "name": "smartcultivationapp",
   "version": "0.1.0",
   "private": true,
+  "description": "Smart cultivation monitoring app packaged for web, Windows, and Android.",
+  "author": "SmartCultivation Team",
+  "main": "electron/main.js",
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.9",
@@ -25,11 +31,49 @@
     "web-vitals": "^2.1.4", 
     "aws-sdk": "^2.1692.0"
   },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.5"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:app": "cross-env BUILD_PATH=app-build react-scripts build",
+    "desktop:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "desktop:build": "npm run build:app && electron-builder --win portable",
+    "desktop:dist": "npm run desktop:build",
+    "desktop:zip": "powershell -Command \"New-Item -ItemType Directory -Force -Path 'public/downloads' | Out-Null; if (Test-Path 'public/downloads/smartcultivation-windows.zip') { Remove-Item -LiteralPath 'public/downloads/smartcultivation-windows.zip' -Force }; Compress-Archive -Path 'release/win-unpacked/*' -DestinationPath 'public/downloads/smartcultivation-windows.zip' -Force\"",
+    "cap:sync": "npm run build:app && cap sync android",
+    "android:open": "cap open android",
+    "android:sync": "npm run cap:sync",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+  },
+  "build": {
+    "appId": "com.smartcultivation.app",
+    "productName": "SmartCultivation",
+    "directories": {
+      "output": "release"
+    },
+    "npmRebuild": false,
+    "files": [
+      "app-build/**/*",
+      "electron/**/*",
+      "package.json"
+    
+    ],
+    "extraMetadata": {
+    "main": "electron/main.js"
+  }, 
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "smartcultivation-windows.${ext}"
+    }
   },
   "eslintConfig": {
     "extends": [

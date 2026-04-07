@@ -416,7 +416,7 @@ function buildImageResponse(doc) {
     attachmentMode: doc.attachmentMode || "automatic",
     selectedDate: doc.selectedDate || "",
     telemetry: doc.telemetry || null,
-    imageBase64: doc.imageData ? doc.imageData.toString("base64") : null,
+    imagePath: `/api/images/${doc.deviceId}/${doc._id}/file`,
   };
 }
 
@@ -495,10 +495,32 @@ const s3 = new AWS.S3({
 app.get("/api/images/:deviceId", auth, async (req, res) => {
   try {
     const images = await ImageRecord.find({ deviceId: req.params.deviceId })
+      .select("-imageData")
       .sort({ uploadedAt: -1 })
-      .limit(20);
+      .limit(20)
+      .lean();
 
     res.json(images.map(buildImageResponse));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/images/:deviceId/:imageId/file", auth, async (req, res) => {
+  try {
+    const image = await ImageRecord.findOne({
+      _id: req.params.imageId,
+      deviceId: req.params.deviceId,
+    }).select("fileName contentType imageData");
+
+    if (!image || !image.imageData) {
+      return res.status(404).json({ error: "Evidence image not found" });
+    }
+
+    res.setHeader("Content-Type", image.contentType || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename="${image.fileName || "evidence-image"}"`);
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(image.imageData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

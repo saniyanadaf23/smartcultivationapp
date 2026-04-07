@@ -1,6 +1,7 @@
 // ── src/services/api.js ──────────────────────────────────────────────
 
 const BASE = process.env.REACT_APP_API_URL + "/api";
+const API_ORIGIN = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -57,6 +58,12 @@ export async function getEvidenceImages(deviceId) {
   if (res.status === 401) throw new Error("Unauthorized - please login again");
   if (!res.ok) throw new Error("Failed to fetch evidence images");
   return res.json();
+}
+
+export function getEvidenceImageUrl(deviceId, imageId) {
+  const token = localStorage.getItem("token");
+  const query = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${API_ORIGIN}/api/images/${deviceId}/${imageId}/file${query}`;
 }
 
 export async function uploadEvidenceImage(deviceId, file, options = {}) {

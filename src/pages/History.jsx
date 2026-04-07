@@ -20,6 +20,7 @@ import {
   getAllLatest,
   deleteEvidenceImage,
   getEvidenceImages,
+  getEvidenceImageUrl,
   getSensorHistoryRange,
   uploadEvidenceImage,
 } from "../services/api";
@@ -62,6 +63,11 @@ function formatValue(value, unit = "") {
 function formatSelectedDate(value) {
   if (!value) return "";
   return formatDateTime(`${value}T00:00:00`);
+}
+
+function getImageSource(image) {
+  if (!image?._id || !image?.deviceId) return "";
+  return getEvidenceImageUrl(image.deviceId, image._id);
 }
 
 function RelayPill({ label, value }) {
@@ -600,9 +606,10 @@ export default function History() {
                 >
                   <Box
                     component="img"
-                    src={`data:${image.contentType};base64,${image.imageBase64}`}
+                    src={getImageSource(image)}
                     alt={image.fileName || "Evidence"}
                     onClick={() => setZoomedImage(image)}
+                    loading="lazy"
                     sx={{
                       width: "100%",
                       maxHeight: 320,
@@ -854,7 +861,7 @@ export default function History() {
 
             <Box
               component="img"
-              src={`data:${zoomedImage.contentType};base64,${zoomedImage.imageBase64}`}
+              src={getImageSource(zoomedImage)}
               alt={zoomedImage.fileName || "Evidence"}
               sx={{
                 width: "100%",

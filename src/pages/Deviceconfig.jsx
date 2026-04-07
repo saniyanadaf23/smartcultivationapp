@@ -30,12 +30,25 @@ const RELAY_DEFAULTS = {
   light: { parameter: "temperature", operator: "<",  value: 1   },
 };
 
+const FAN_SCHEDULE_DEFAULT = {
+  enabled: false,
+  type: "hourly",
+  startMinute: 0,
+  durationMinutes: 2,
+};
+
 function makeDefaultRelay(key) {
-  return {
+  const relay = {
     enabled:    true,
     logic:      "AND",
     conditions: [{ ...RELAY_DEFAULTS[key] }],
   };
+
+  if (key === "fan") {
+    relay.schedule = { ...FAN_SCHEDULE_DEFAULT };
+  }
+
+  return relay;
 }
 
 function safeCondition(c, key) {
@@ -82,11 +95,27 @@ function normaliseRelay(raw, key) {
                  ? c.value : def.value,
   }));
 
-  return {
+  const relay = {
     enabled:    typeof raw.enabled === "boolean" ? raw.enabled : true,
     logic:      raw.logic === "OR" ? "OR" : "AND",
     conditions,
   };
+
+  if (key === "fan") {
+    const schedule = raw.schedule || {};
+    relay.schedule = {
+      enabled: typeof schedule.enabled === "boolean" ? schedule.enabled : FAN_SCHEDULE_DEFAULT.enabled,
+      type: schedule.type === "hourly" ? "hourly" : FAN_SCHEDULE_DEFAULT.type,
+      startMinute: Number.isFinite(Number(schedule.startMinute))
+        ? Math.min(59, Math.max(0, Number(schedule.startMinute)))
+        : FAN_SCHEDULE_DEFAULT.startMinute,
+      durationMinutes: Number.isFinite(Number(schedule.durationMinutes))
+        ? Math.max(1, Number(schedule.durationMinutes))
+        : FAN_SCHEDULE_DEFAULT.durationMinutes,
+    };
+  }
+
+  return relay;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -311,6 +340,14 @@ function RelayCard({ meta, relay, onRelayChange, onSave, saving, lastSaved }) {
     return c.value !== undefined && c.value !== null && c.value !== "" && !isNaN(Number(c.value));
   });
 
+  const scheduleValid = meta.key !== "fan" || !relay.schedule?.enabled || (
+    Number.isFinite(Number(relay.schedule?.startMinute)) &&
+    Number(relay.schedule.startMinute) >= 0 &&
+    Number(relay.schedule.startMinute) <= 59 &&
+    Number.isFinite(Number(relay.schedule?.durationMinutes)) &&
+    Number(relay.schedule.durationMinutes) > 0
+  );
+
   return (
     <motion.div variants={fadeUp} initial="hidden" animate="visible"
       custom={RELAY_META.findIndex(m => m.key === meta.key)}>
@@ -399,6 +436,76 @@ function RelayCard({ meta, relay, onRelayChange, onSave, saving, lastSaved }) {
           ))}
         </Box>
 
+        {meta.key === "fan" && (
+          <Box sx={{ mb: 2, p: 1.8, borderRadius: "10px", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.16)" }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap", mb: 1.5 }}>
+              <Box>
+                <Typography sx={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(232,245,233,0.3)", textTransform: "uppercase", fontFamily: "'JetBrains Mono',monospace" }}>
+                  Fan Schedule
+                </Typography>
+                <Typography sx={{ fontSize: 11, color: "rgba(232,245,233,0.45)", mt: 0.5 }}>
+                  Combine an hourly window with the fan conditions using the relay logic.
+                </Typography>
+              </Box>
+              <Switch
+                checked={Boolean(relay.schedule?.enabled)}
+                onChange={(e) => patch({
+                  schedule: {
+                    ...FAN_SCHEDULE_DEFAULT,
+                    ...relay.schedule,
+                    enabled: e.target.checked,
+                  },
+                })}
+                disabled={!relay.enabled}
+                size="small"
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": { color: meta.color },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: meta.color },
+                }}
+              />
+            </Box>
+
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.2 }}>
+              <TextField
+                label="Start minute"
+                size="small"
+                type="number"
+                value={relay.schedule?.startMinute ?? FAN_SCHEDULE_DEFAULT.startMinute}
+                disabled={!relay.enabled || !relay.schedule?.enabled}
+                onChange={(e) => patch({
+                  schedule: {
+                    ...FAN_SCHEDULE_DEFAULT,
+                    ...relay.schedule,
+                    startMinute: e.target.value,
+                  },
+                })}
+                inputProps={{ min: 0, max: 59 }}
+                error={Boolean(relay.schedule?.enabled) && (Number(relay.schedule?.startMinute) < 0 || Number(relay.schedule?.startMinute) > 59)}
+                helperText="0 to 59 every hour"
+                sx={textFieldSx(meta.color)}
+              />
+              <TextField
+                label="Run for minutes"
+                size="small"
+                type="number"
+                value={relay.schedule?.durationMinutes ?? FAN_SCHEDULE_DEFAULT.durationMinutes}
+                disabled={!relay.enabled || !relay.schedule?.enabled}
+                onChange={(e) => patch({
+                  schedule: {
+                    ...FAN_SCHEDULE_DEFAULT,
+                    ...relay.schedule,
+                    durationMinutes: e.target.value,
+                  },
+                })}
+                inputProps={{ min: 1 }}
+                error={Boolean(relay.schedule?.enabled) && Number(relay.schedule?.durationMinutes) <= 0}
+                helperText='Type is fixed as "hourly"'
+                sx={textFieldSx(meta.color)}
+              />
+            </Box>
+          </Box>
+        )}
+
         {/* Add condition button */}
         <Button
           fullWidth
@@ -437,6 +544,11 @@ function RelayCard({ meta, relay, onRelayChange, onSave, saving, lastSaved }) {
                 </Typography>
               </Box>
             ))}
+            {meta.key === "fan" && relay.schedule?.enabled && (
+              <Typography sx={{ mt: 0.8, fontSize: 11, color: meta.color, fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.5 }}>
+                Schedule: hourly from minute {relay.schedule.startMinute} for {relay.schedule.durationMinutes} minute(s)
+              </Typography>
+            )}
           </Box>
         )}
 
@@ -444,7 +556,7 @@ function RelayCard({ meta, relay, onRelayChange, onSave, saving, lastSaved }) {
         <Button
           fullWidth
           onClick={onSave}
-          disabled={saving || !allValid}
+          disabled={saving || !allValid || !scheduleValid}
           sx={{
             py: 1.2, fontSize: 12, borderRadius: "8px", fontWeight: 500,
             fontFamily: "'JetBrains Mono', monospace",
@@ -547,6 +659,14 @@ export default function DeviceConfig({ deviceId: propDeviceId, onBack }) {
         operator:  c.operator,
         value:     c.parameter === "soilStatus" ? String(c.value) : Number(c.value),
       })),
+      ...(r.schedule ? {
+        schedule: {
+          enabled: Boolean(r.schedule.enabled),
+          type: "hourly",
+          startMinute: Number(r.schedule.startMinute ?? FAN_SCHEDULE_DEFAULT.startMinute),
+          durationMinutes: Number(r.schedule.durationMinutes ?? FAN_SCHEDULE_DEFAULT.durationMinutes),
+        },
+      } : {}),
     });
 
     // Send ALL relays so the saved document is always complete
@@ -714,6 +834,11 @@ export default function DeviceConfig({ deviceId: propDeviceId, onBack }) {
                                 {c.parameter} {c.operator} {c.value}
                               </Typography>
                             ))}
+                            {meta.key === "fan" && r.schedule?.enabled && (
+                              <Typography sx={{ fontSize: "11px !important", color: `${meta.color} !important`, lineHeight: 1.9 }}>
+                                hourly @ minute {r.schedule.startMinute} for {r.schedule.durationMinutes}m
+                              </Typography>
+                            )}
                           </Box>
                         </Box>
                       );

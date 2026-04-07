@@ -2,10 +2,15 @@ const jwt = require("jsonwebtoken");
 
 module.exports = function (req, res, next) {
   const header = req.headers.authorization;
+  const queryToken = req.query?.token;
 
-  if (!header) return res.status(401).json({ message: "No token" });
+  if (!header && !queryToken) {
+    return res.status(401).json({ message: "No token" });
+  }
 
-  const token = header.startsWith("Bearer ") ? header.slice(7) : header;
+  const token = header
+    ? (header.startsWith("Bearer ") ? header.slice(7) : header)
+    : queryToken;
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
