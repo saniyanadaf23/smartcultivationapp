@@ -96,6 +96,18 @@ export async function uploadEvidenceImage(deviceId, file, options = {}) {
   });
 }
 
+export async function deleteEvidenceImage(deviceId, imageId) {
+  const res = await fetch(`${BASE}/images/${deviceId}/${imageId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (res.status === 401) throw new Error("Unauthorized - please login again");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to delete evidence image");
+  return data;
+}
+
 export async function getAllLatest() {
   const res = await fetch(`${BASE}/sensors/all-latest`, {
     headers: getAuthHeaders(),

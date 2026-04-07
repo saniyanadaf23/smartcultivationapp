@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   getAllLatest,
+  deleteEvidenceImage,
   getEvidenceImages,
   getSensorHistoryRange,
   uploadEvidenceImage,
@@ -131,6 +132,7 @@ export default function History() {
   const [loading, setLoading] = useState(true);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [attachmentMode, setAttachmentMode] = useState("automatic");
   const [selectedDate, setSelectedDate] = useState("");
@@ -608,9 +610,36 @@ export default function History() {
                   />
 
                   <Box>
-                    <Typography sx={{ fontSize: 18, mb: 0.4 }}>
-                      {image.fileName || "Mushroom evidence"}
-                    </Typography>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap", alignItems: "flex-start" }}>
+                      <Typography sx={{ fontSize: 18, mb: 0.4 }}>
+                        {image.fileName || "Mushroom evidence"}
+                      </Typography>
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setDeletingImageId(image._id);
+                            setImageError("");
+                            await deleteEvidenceImage(image.deviceId || selectedDevice, image._id);
+                            setImages((prev) => prev.filter((item) => item._id !== image._id));
+                          } catch (err) {
+                            setImageError(err.message || "Failed to delete evidence image");
+                          } finally {
+                            setDeletingImageId(null);
+                          }
+                        }}
+                        disabled={deletingImageId === image._id}
+                        sx={{
+                          color: "#fca5a5",
+                          border: "1px solid rgba(248,113,113,0.2)",
+                          borderRadius: "10px",
+                          px: 1.8,
+                          py: 0.7,
+                          minWidth: 110,
+                        }}
+                      >
+                        {deletingImageId === image._id ? "Deleting..." : "Delete"}
+                      </Button>
+                    </Box>
                     <Typography
                       sx={{
                         fontSize: 12,

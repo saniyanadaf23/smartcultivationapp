@@ -544,6 +544,23 @@ app.post("/api/images/:deviceId", auth, imageUpload.single("image"), async (req,
   }
 });
 
+app.delete("/api/images/:deviceId/:imageId", auth, async (req, res) => {
+  try {
+    const deleted = await ImageRecord.findOneAndDelete({
+      _id: req.params.imageId,
+      deviceId: req.params.deviceId,
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Evidence image not found" });
+    }
+
+    res.json({ success: true, imageId: req.params.imageId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post(
   "/api/firmware/upload",
   auth,
