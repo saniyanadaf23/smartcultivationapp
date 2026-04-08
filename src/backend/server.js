@@ -126,6 +126,8 @@ const imageSchema = new mongoose.Schema(
   }
 );
 
+imageSchema.index({ deviceId: 1, uploadedAt: -1 });
+
 const ImageRecord = mongoose.model("ImageRecord", imageSchema);
 
 function sanitizeUser(userDoc) {
@@ -524,11 +526,12 @@ app.get("/api/images/:deviceId", auth, async (req, res) => {
 
     const [images, total] = await Promise.all([
       ImageRecord.find(query)
-      .select("_id deviceId fileName contentType uploadedAt attachmentMode selectedDate telemetry")
-      .sort({ uploadedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
+        .select("_id deviceId fileName contentType uploadedAt attachmentMode selectedDate telemetry")
+        .sort({ uploadedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .allowDiskUse(true)
+        .lean(),
       ImageRecord.countDocuments(query),
     ]);
 
