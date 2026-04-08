@@ -136,6 +136,9 @@ export default function History() {
   const [selectedDevice, setSelectedDevice] = useState("");
   const [records, setRecords] = useState([]);
   const [images, setImages] = useState([]);
+  const [hasMoreImages, setHasMoreImages] = useState(false);
+  const [nextImageSkip, setNextImageSkip] = useState(0);
+  const [visibleRecordCount, setVisibleRecordCount] = useState(60);
   const [loading, setLoading] = useState(true);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -144,7 +147,6 @@ export default function History() {
   const [attachmentMode, setAttachmentMode] = useState("automatic");
   const [selectedDate, setSelectedDate] = useState("");
   const [zoomedImage, setZoomedImage] = useState(null);
-  const [visibleImageCount, setVisibleImageCount] = useState(6);
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState("");
   const [imageSuccess, setImageSuccess] = useState("");
@@ -157,6 +159,7 @@ export default function History() {
       setError("");
       const data = await getSensorHistoryRange(deviceId, { days: 3 });
       setRecords(data);
+      setVisibleRecordCount(60);
     } catch (err) {
       setError(err.message || "Failed to load history");
       setRecords([]);
@@ -165,18 +168,22 @@ export default function History() {
     }
   }, []);
 
-  const loadImages = useCallback(async (deviceId) => {
+  const loadImages = useCallback(async (deviceId, { append = false, skip = 0 } = {}) => {
     if (!deviceId) return;
 
     try {
       setImagesLoading(true);
       setImageError("");
-      const data = await getEvidenceImages(deviceId);
-      setImages(data);
-      setVisibleImageCount(6);
+      const data = await getEvidenceImages(deviceId, { limit: 6, skip });
+      const items = Array.isArray(data) ? data : data.items || [];
+      setImages((prev) => (append ? [...prev, ...items] : items));
+      setHasMoreImages(Array.isArray(data) ? false : Boolean(data.hasMore));
+      setNextImageSkip(Array.isArray(data) ? items.length : data.nextSkip || items.length);
     } catch (err) {
       setImageError(err.message || "Failed to load evidence images");
-      setImages([]);
+      if (!append) {
+        setImages([]);
+      }
     } finally {
       setImagesLoading(false);
     }
@@ -204,10 +211,13 @@ export default function History() {
           if (initialDevice) {
             const [historyData, imageData] = await Promise.all([
               getSensorHistoryRange(initialDevice, { days: 3 }),
-              getEvidenceImages(initialDevice),
+              getEvidenceImages(initialDevice, { limit: 6, skip: 0 }),
             ]);
             setRecords(historyData);
-            setImages(imageData);
+            setVisibleRecordCount(60);
+            setImages(Array.isArray(imageData) ? imageData : imageData.items || []);
+            setHasMoreImages(Array.isArray(imageData) ? false : Boolean(imageData.hasMore));
+            setNextImageSkip(Array.isArray(imageData) ? imageData.length : imageData.nextSkip || 0);
           } else {
             setRecords([]);
             setImages([]);
@@ -219,10 +229,13 @@ export default function History() {
           if (user.deviceId) {
             const [historyData, imageData] = await Promise.all([
               getSensorHistoryRange(user.deviceId, { days: 3 }),
-              getEvidenceImages(user.deviceId),
+              getEvidenceImages(user.deviceId, { limit: 6, skip: 0 }),
             ]);
             setRecords(historyData);
-            setImages(imageData);
+            setVisibleRecordCount(60);
+            setImages(Array.isArray(imageData) ? imageData : imageData.items || []);
+            setHasMoreImages(Array.isArray(imageData) ? false : Boolean(imageData.hasMore));
+            setNextImageSkip(Array.isArray(imageData) ? imageData.length : imageData.nextSkip || 0);
           } else {
             setRecords([]);
             setImages([]);
@@ -549,7 +562,6 @@ export default function History() {
                     selectedDate,
                   });
                   setImages((prev) => [uploaded, ...prev]);
-                  setVisibleImageCount((prev) => Math.max(prev, 6));
                   setSelectedFile(null);
                   setImageSuccess("Evidence image uploaded successfully");
                 } catch (err) {
@@ -594,7 +606,7 @@ export default function History() {
             </Box>
           ) : (
             <Box sx={{ display: "grid", gap: 2 }}>
-              {images.slice(0, visibleImageCount).map((image) => (
+              {images.map((image) => (
                 <Box
                   key={image._id}
                   sx={{
@@ -716,9 +728,10 @@ export default function History() {
                   </Box>
                 </Box>
               ))}
-              {images.length > visibleImageCount && (
+              {hasMoreImages && (
                 <Button
-                  onClick={() => setVisibleImageCount((prev) => prev + 6)}
+                  onClick={() => loadImages(selectedDevice, { append: true, skip: nextImageSkip })}
+                  disabled={imagesLoading}
                   sx={{
                     justifySelf: "center",
                     color: "#38bdf8",
@@ -769,7 +782,7 @@ export default function History() {
           </Box>
         ) : (
           <Box sx={{ display: "grid", gap: 2 }}>
-            {records.map((record) => (
+            {records.slice(0, visibleRecordCount).map((record) => (
               <Box
                 key={record._id || `${record.deviceId}-${record.time}`}
                 sx={{
@@ -817,6 +830,20 @@ export default function History() {
                 </Box>
               </Box>
             ))}
+            {records.length > visibleRecordCount && (
+              <Button
+                onClick={() => setVisibleRecordCount((prev) => prev + 60)}
+                sx={{
+                  justifySelf: "center",
+                  color: "#4ade80",
+                  border: "1px solid rgba(74,222,128,0.22)",
+                  borderRadius: "10px",
+                  px: 2.5,
+                }}
+              >
+                Load More History
+              </Button>
+            )}
           </Box>
         )}
       </Box>

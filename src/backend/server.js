@@ -515,13 +515,29 @@ const s3 = new AWS.S3({
 
 app.get("/api/images/:deviceId", auth, async (req, res) => {
   try {
-    const images = await ImageRecord.find({ deviceId: req.params.deviceId })
-      .select("-imageData")
-      .sort({ uploadedAt: -1 })
-      .limit(20)
-      .lean();
+    const limit = Math.min(
+      30,
+      Math.max(1, Number.parseInt(req.query.limit, 10) || 6)
+    );
+    const skip = Math.max(0, Number.parseInt(req.query.skip, 10) || 0);
+    const query = { deviceId: req.params.deviceId };
 
-    res.json(images.map(buildImageResponse));
+    const [images, total] = await Promise.all([
+      ImageRecord.find(query)
+      .select("_id deviceId fileName contentType uploadedAt attachmentMode selectedDate telemetry")
+      .sort({ uploadedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+      ImageRecord.countDocuments(query),
+    ]);
+
+    res.json({
+      items: images.map(buildImageResponse),
+      total,
+      hasMore: skip + images.length < total,
+      nextSkip: skip + images.length,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

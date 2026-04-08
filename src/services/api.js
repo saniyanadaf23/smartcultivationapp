@@ -50,14 +50,20 @@ export async function getSensorHistoryRange(deviceId, { days = 3, limit } = {}) 
   return res.json();
 }
 
-export async function getEvidenceImages(deviceId) {
-  const res = await fetch(`${BASE}/images/${deviceId}`, {
+export async function getEvidenceImages(deviceId, { limit = 6, skip = 0 } = {}) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    skip: String(skip),
+  });
+
+  const res = await fetch(`${BASE}/images/${deviceId}?${params.toString()}`, {
     headers: getAuthHeaders(),
   });
 
   if (res.status === 401) throw new Error("Unauthorized - please login again");
-  if (!res.ok) throw new Error("Failed to fetch evidence images");
-  return res.json();
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.error || "Failed to fetch evidence images");
+  return data;
 }
 
 export function getEvidenceImageUrl(deviceId, imageId) {
