@@ -494,24 +494,25 @@ function RelayCard({ meta, relay, onRelayChange, onSave, saving, lastSaved }) {
           <Typography sx={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(232,245,233,0.3)", textTransform: "uppercase", fontFamily: "'JetBrains Mono',monospace" }}>
             Trigger Conditions ({relay.conditions.length})
           </Typography>
-          {relay.conditions.length > 1 && (
-            <Box sx={{ display: "flex", gap: 0.5 }}>
-              {LOGIC_OPTIONS.map((opt) => (
-                <Button key={opt} size="small"
-                  onClick={() => patch({ logic: opt })}
-                  disabled={!relay.enabled}
-                  sx={{
-                    minWidth: 0, px: 1.2, py: 0.2, fontSize: 10, borderRadius: "6px",
-                    fontFamily: "'JetBrains Mono',monospace",
-                    background: relay.logic === opt ? `${meta.color}22` : "transparent",
-                    color:      relay.logic === opt ? meta.color : "rgba(232,245,233,0.35)",
-                    border: `1px solid ${relay.logic === opt ? meta.color + "50" : "rgba(74,222,128,0.1)"}`,
-                    "&:hover": { background: `${meta.color}15` },
-                    "&:disabled": { opacity: 0.4 },
-                  }}>{opt}</Button>
-              ))}
-            </Box>
-          )}
+          <Box sx={{ display: "flex", gap: 0.5 }}>
+            {LOGIC_OPTIONS.map((opt) => (
+              <Button key={opt} size="small"
+                onClick={() => patch({ logic: opt })}
+                disabled={!relay.enabled}
+                sx={{
+                  minWidth: 0, px: 1.2, py: 0.2, fontSize: 10, borderRadius: "6px",
+                  fontFamily: "'JetBrains Mono',monospace",
+                  background: relay.logic === opt ? `${meta.color}22` : "transparent",
+                  color:      relay.logic === opt ? meta.color : "rgba(232,245,233,0.35)",
+                  border: `1px solid ${relay.logic === opt ? meta.color + "50" : "rgba(74,222,128,0.1)"}`,
+                  "&:hover": { background: `${meta.color}15` },
+                  "&:disabled": { opacity: 0.4 },
+                }}>{opt}</Button>
+            ))}
+          </Box>
+          <Typography sx={{ fontSize: 10, color: "rgba(232,245,233,0.38)", fontFamily: "'JetBrains Mono',monospace" }}>
+            Applies between conditions and schedule
+          </Typography>
         </Box>
 
         {/* Condition rows — key uses stable id so React doesn't recycle nodes */}
