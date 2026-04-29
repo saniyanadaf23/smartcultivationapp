@@ -100,6 +100,15 @@ export async function uploadEvidenceImage(deviceId, file, options = {}) {
     if (options.selectedDate) {
       formData.append("selectedDate", options.selectedDate);
     }
+    if (options.manualTemperature !== undefined && options.manualTemperature !== "") {
+      formData.append("manualTemperature", String(options.manualTemperature));
+    }
+    if (options.manualHumidity !== undefined && options.manualHumidity !== "") {
+      formData.append("manualHumidity", String(options.manualHumidity));
+    }
+    if (options.manualRecordedAt) {
+      formData.append("manualRecordedAt", options.manualRecordedAt);
+    }
 
     const token = localStorage.getItem("token");
     const xhr = new XMLHttpRequest();

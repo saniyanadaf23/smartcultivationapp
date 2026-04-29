@@ -651,6 +651,31 @@ function buildImageResponse(doc, category = "chamber") {
   };
 }
 
+function parseOptionalNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildManualOuterTelemetry(body, uploadedAt) {
+  const temperature = parseOptionalNumber(body.manualTemperature);
+  const humidity = parseOptionalNumber(body.manualHumidity);
+
+  if (temperature === null || humidity === null) {
+    throw new Error("Temperature and humidity are required for outer environment evidence");
+  }
+
+  const recordedAt = body.manualRecordedAt ? new Date(body.manualRecordedAt) : uploadedAt;
+  const time = Number.isNaN(recordedAt.getTime()) ? uploadedAt : recordedAt;
+
+  return {
+    temperature,
+    humidity,
+    time,
+    source: "manual",
+  };
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -907,8 +932,7 @@ app.post("/api/evidence/:deviceId", auth, imageUpload.single("image"), async (re
     const { deviceId } = req.params;
     const category = getEvidenceCategory(req.body.category);
     const EvidenceModel = getEvidenceModel(category);
-    const attachmentMode = req.body.attachmentMode === "custom" ? "custom" : "automatic";
-    const selectedDate = req.body.selectedDate || "";
+    const requestedAttachmentMode = req.body.attachmentMode === "custom" ? "custom" : "automatic";
     const profile = await resolveEvidenceProfile({
       category,
       profileId: req.body.profileId || "",
@@ -928,9 +952,13 @@ app.post("/api/evidence/:deviceId", auth, imageUpload.single("image"), async (re
     }
 
     const uploadedAt = new Date();
-    const telemetry = attachmentMode === "custom"
-      ? await findNearestTelemetryForSelectedDate(deviceId, selectedDate, uploadedAt)
-      : await findNearestTelemetry(deviceId, uploadedAt);
+    const attachmentMode = category === "outer" ? "manual" : requestedAttachmentMode;
+    const selectedDate = category === "chamber" ? (req.body.selectedDate || "") : "";
+    const telemetry = category === "outer"
+      ? buildManualOuterTelemetry(req.body, uploadedAt)
+      : attachmentMode === "custom"
+        ? await findNearestTelemetryForSelectedDate(deviceId, selectedDate, uploadedAt)
+        : await findNearestTelemetry(deviceId, uploadedAt);
 
     const imageRecord = await EvidenceModel.create({
       deviceId,
