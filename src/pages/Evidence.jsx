@@ -146,6 +146,7 @@ export default function Evidence() {
   const [selectedDate, setSelectedDate] = useState("");
   const [manualTemperature, setManualTemperature] = useState("");
   const [manualHumidity, setManualHumidity] = useState("");
+  const [manualRecordedDate, setManualRecordedDate] = useState("");
   const [zoomedImage, setZoomedImage] = useState(null);
   const [imageError, setImageError] = useState("");
   const [imageSuccess, setImageSuccess] = useState("");
@@ -581,6 +582,26 @@ export default function Evidence() {
                     },
                   }}
                 />
+                <TextField
+                  type="date"
+                  size="small"
+                  label="Recorded Date"
+                  value={manualRecordedDate}
+                  onChange={(event) => setManualRecordedDate(event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    minWidth: 190,
+                    "& .MuiInputLabel-root": { color: "rgba(232,245,233,0.62)" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "#7dd3fc" },
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "10px",
+                      color: "#e8f5e9",
+                      "& fieldset": { borderColor: "rgba(56,189,248,0.18)" },
+                      "&:hover fieldset": { borderColor: "rgba(56,189,248,0.32)" },
+                    },
+                    "& input": { colorScheme: "dark" },
+                  }}
+                />
               </>
             ) : (
               <>
@@ -653,8 +674,8 @@ export default function Evidence() {
                   setImageError("Please choose a custom date before uploading.");
                   return;
                 }
-                if (isOuterCategory && (!manualTemperature || !manualHumidity)) {
-                  setImageError("Please enter temperature and humidity for outer environment evidence.");
+                if (isOuterCategory && (!manualTemperature || !manualHumidity || !manualRecordedDate)) {
+                  setImageError("Please enter temperature, humidity, and date for outer environment evidence.");
                   return;
                 }
 
@@ -670,12 +691,14 @@ export default function Evidence() {
                     profileName: selectedProfileName,
                     manualTemperature: isOuterCategory ? manualTemperature : "",
                     manualHumidity: isOuterCategory ? manualHumidity : "",
+                    manualRecordedAt: isOuterCategory && manualRecordedDate ? `${manualRecordedDate}T12:00:00` : "",
                   });
                   setImages((prev) => [uploaded, ...prev]);
                   setSelectedFile(null);
                   if (isOuterCategory) {
                     setManualTemperature("");
                     setManualHumidity("");
+                    setManualRecordedDate("");
                   }
                   setImageSuccess(`${categoryLabel} evidence uploaded successfully for ${selectedProfileName}`);
                 } catch (err) {
@@ -689,7 +712,7 @@ export default function Evidence() {
                 !selectedFile ||
                 !selectedProfileId ||
                 uploadingImage ||
-                (isOuterCategory && (!manualTemperature || !manualHumidity))
+                (isOuterCategory && (!manualTemperature || !manualHumidity || !manualRecordedDate))
               }
               sx={{
                 color: "#020c04",
