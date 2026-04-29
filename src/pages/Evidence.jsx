@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   deleteEvidenceImage,
   getAllLatest,
+  getChamberProfiles,
   getEvidenceExportUrl,
   getEvidenceImageUrl,
   getEvidenceImages,
@@ -130,6 +131,9 @@ export default function Evidence() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("chamber");
+  const [profiles, setProfiles] = useState([]);
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [selectedProfileName, setSelectedProfileName] = useState("");
   const [images, setImages] = useState([]);
   const [hasMoreImages, setHasMoreImages] = useState(false);
   const [nextImageSkip, setNextImageSkip] = useState(0);
@@ -149,13 +153,19 @@ export default function Evidence() {
     [selectedCategory]
   );
 
-  const loadImages = useCallback(async (deviceId, category, { append = false, skip = 0 } = {}) => {
+  const loadImages = useCallback(async (deviceId, category, { append = false, skip = 0, profileId = "", profileName = "" } = {}) => {
     if (!deviceId) return;
 
     try {
       setImagesLoading(true);
       setImageError("");
-      const data = await getEvidenceImages(deviceId, { limit: 6, skip, category });
+      const data = await getEvidenceImages(deviceId, {
+        limit: 6,
+        skip,
+        category,
+        profileId,
+        profileName,
+      });
       const items = Array.isArray(data) ? data : data.items || [];
       setImages((prev) => (append ? [...prev, ...items] : items));
       setHasMoreImages(Array.isArray(data) ? false : Boolean(data.hasMore));
@@ -178,21 +188,40 @@ export default function Evidence() {
       try {
         setLoading(true);
 
+        const [profileList, latest] = await Promise.all([
+          getChamberProfiles(),
+          user.role === "admin" ? getAllLatest() : Promise.resolve([]),
+        ]);
+
+        setProfiles(profileList || []);
+        const buttonProfile = (profileList || []).find(
+          (profile) => String(profile.name || "").trim().toLowerCase() === "button mushroom"
+        );
+        const initialProfileId = buttonProfile?._id || profileList?.[0]?._id || "";
+        const initialProfileName = buttonProfile?.name || profileList?.[0]?.name || "";
+        setSelectedProfileId(initialProfileId);
+        setSelectedProfileName(initialProfileName);
+
         if (user.role === "admin") {
-          const latest = await getAllLatest();
           const deviceIds = latest.map((item) => item.deviceId).filter(Boolean);
           const initialDevice = deviceIds[0] || "";
           setDevices(deviceIds);
           setSelectedDevice(initialDevice);
           if (initialDevice) {
-            await loadImages(initialDevice, "chamber");
+            await loadImages(initialDevice, "chamber", {
+              profileId: initialProfileId,
+              profileName: initialProfileName,
+            });
           }
         } else {
           const assigned = user.deviceId || "";
           setDevices(assigned ? [assigned] : []);
           setSelectedDevice(assigned);
           if (assigned) {
-            await loadImages(assigned, "chamber");
+            await loadImages(assigned, "chamber", {
+              profileId: initialProfileId,
+              profileName: initialProfileName,
+            });
           }
         }
       } catch (err) {
@@ -206,20 +235,28 @@ export default function Evidence() {
   }, [loadImages, navigate, user]);
 
   useEffect(() => {
-    if (!user || !selectedDevice) return;
-    loadImages(selectedDevice, selectedCategory);
-  }, [loadImages, selectedCategory, selectedDevice, user]);
+    if (!user || !selectedDevice || !selectedProfileId) return;
+    loadImages(selectedDevice, selectedCategory, {
+      profileId: selectedProfileId,
+      profileName: selectedProfileName,
+    });
+  }, [loadImages, selectedCategory, selectedDevice, selectedProfileId, selectedProfileName, user]);
 
   const triggerDownload = useCallback(() => {
-    if (!selectedDevice) return;
-    const url = getEvidenceExportUrl(selectedDevice, selectedCategory);
+    if (!selectedDevice || !selectedProfileId) return;
+    const url = getEvidenceExportUrl(
+      selectedDevice,
+      selectedCategory,
+      selectedProfileId,
+      selectedProfileName
+    );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `${selectedDevice}-${selectedCategory}-evidence-report.html`;
+    anchor.download = `${selectedDevice}-${selectedCategory}-${(selectedProfileName || "profile").replace(/\s+/g, "-").toLowerCase()}-evidence-report.html`;
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
-  }, [selectedCategory, selectedDevice]);
+  }, [selectedCategory, selectedDevice, selectedProfileId, selectedProfileName]);
 
   if (!user) return null;
 
@@ -380,12 +417,49 @@ export default function Evidence() {
                 </ToggleButton>
               </ToggleButtonGroup>
             </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: 11, color: "rgba(232,245,233,0.4)", mb: 0.7 }}>
+                Mushroom Profile
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 220 }}>
+                <Select
+                  value={selectedProfileId}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    const nextProfile = profiles.find((profile) => profile._id === nextId);
+                    setSelectedProfileId(nextId);
+                    setSelectedProfileName(nextProfile?.name || "");
+                  }}
+                  sx={{
+                    color: "#e8f5e9",
+                    borderRadius: "10px",
+                    fontFamily: "'JetBrains Mono', monospace",
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "rgba(251,191,36,0.2)",
+                    },
+                    "& .MuiSvgIcon-root": { color: "rgba(232,245,233,0.5)" },
+                  }}
+                >
+                  {profiles.map((profile) => (
+                    <MenuItem key={profile._id} value={profile._id}>
+                      {profile.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           </Box>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Button
-              onClick={() => loadImages(selectedDevice, selectedCategory)}
-              disabled={!selectedDevice || imagesLoading}
+              onClick={() =>
+                loadImages(selectedDevice, selectedCategory, {
+                  profileId: selectedProfileId,
+                  profileName: selectedProfileName,
+                })
+              }
+              disabled={!selectedDevice || !selectedProfileId || imagesLoading}
               sx={{
                 color: "#38bdf8",
                 border: "1px solid rgba(56,189,248,0.22)",
@@ -397,7 +471,7 @@ export default function Evidence() {
             </Button>
             <Button
               onClick={triggerDownload}
-              disabled={!selectedDevice}
+              disabled={!selectedDevice || !selectedProfileId}
               sx={{
                 color: "#fbbf24",
                 border: "1px solid rgba(251,191,36,0.22)",
@@ -423,7 +497,7 @@ export default function Evidence() {
         >
           <Typography sx={{ fontSize: 20, mb: 0.7 }}>{categoryLabel} Evidence</Typography>
           <Typography sx={{ fontSize: 12, color: "rgba(232,245,233,0.45)", mb: 2 }}>
-            Upload images for the {categoryLabel.toLowerCase()} and attach the nearest telemetry automatically, or pick a custom date to match the upload time-of-day on that date.
+            Upload images for the {categoryLabel.toLowerCase()} under the selected mushroom profile and attach the nearest telemetry automatically, or pick a custom date to match the upload time-of-day on that date.
           </Typography>
 
           <Box sx={{ mb: 2, display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
@@ -509,7 +583,7 @@ export default function Evidence() {
 
             <Button
               onClick={async () => {
-                if (!selectedDevice || !selectedFile) return;
+                if (!selectedDevice || !selectedFile || !selectedProfileId) return;
                 if (attachmentMode === "custom" && !selectedDate) {
                   setImageError("Please choose a custom date before uploading.");
                   return;
@@ -523,17 +597,19 @@ export default function Evidence() {
                     category: selectedCategory,
                     attachmentMode,
                     selectedDate,
+                    profileId: selectedProfileId,
+                    profileName: selectedProfileName,
                   });
                   setImages((prev) => [uploaded, ...prev]);
                   setSelectedFile(null);
-                  setImageSuccess(`${categoryLabel} evidence uploaded successfully`);
+                  setImageSuccess(`${categoryLabel} evidence uploaded successfully for ${selectedProfileName}`);
                 } catch (err) {
                   setImageError(err.message || "Failed to upload image");
                 } finally {
                   setUploadingImage(false);
                 }
               }}
-              disabled={!selectedDevice || !selectedFile || uploadingImage}
+              disabled={!selectedDevice || !selectedFile || !selectedProfileId || uploadingImage}
               sx={{
                 color: "#020c04",
                 background: "linear-gradient(135deg,#4ade80,#86efac)",
@@ -564,7 +640,7 @@ export default function Evidence() {
               }}
             >
               <Typography sx={{ color: "rgba(232,245,233,0.55)" }}>
-                No {categoryLabel.toLowerCase()} evidence uploaded for this device yet.
+                No {categoryLabel.toLowerCase()} evidence uploaded for {selectedProfileName || "this profile"} on this device yet.
               </Typography>
             </Box>
           ) : (
@@ -651,6 +727,17 @@ export default function Evidence() {
                     <Typography
                       sx={{
                         fontSize: 11,
+                        color: "#fbbf24",
+                        fontFamily: "'JetBrains Mono', monospace",
+                        mb: 0.8,
+                      }}
+                    >
+                      Profile: {image.profileName || selectedProfileName || "Unassigned"}
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        fontSize: 11,
                         color: image.category === "outer" ? "#38bdf8" : "#4ade80",
                         fontFamily: "'JetBrains Mono', monospace",
                         mb: 1.2,
@@ -693,7 +780,14 @@ export default function Evidence() {
 
               {hasMoreImages && (
                 <Button
-                  onClick={() => loadImages(selectedDevice, selectedCategory, { append: true, skip: nextImageSkip })}
+                  onClick={() =>
+                    loadImages(selectedDevice, selectedCategory, {
+                      append: true,
+                      skip: nextImageSkip,
+                      profileId: selectedProfileId,
+                      profileName: selectedProfileName,
+                    })
+                  }
                   disabled={imagesLoading}
                   sx={{
                     justifySelf: "center",
