@@ -49,8 +49,8 @@ const TEAM = [
     role:"Database & API",
     color:"#34d399",
     imageUrl:"/team/unnati.jpg",
-    linkedin:"#",
-    github:"#",
+    linkedin:"www.linkedin.com/in/unnati-lonakar-020128362",
+    github:"https://github.com/unnatial2005",
   },
   {
     name:"Darshan",
@@ -61,27 +61,27 @@ const TEAM = [
     github:"https://github.com/Darshan-Dj-03",
   },
   {
-    name:"Vikas",
+    name:"Vikas T",
     role:"IOT & Hardware",
     color:"#a7f3d0",
     imageUrl:"/team/vikas.jpg",
-    linkedin:"#",
-    github:"#",
+    linkedin:"https://www.linkedin.com/in/vikas-tirakannanavar-54a3152b4",
+    github:"https://github.com/vikasvtt",
   },
   {
     name:"Aditya",
-    role:"DevOps & Deployment",
+    role:"AWS Integration",
     color:"#bbf7d0",
     imageUrl:"/team/aditya.jpg",
-    linkedin:"#",
-    github:"#",
+    linkedin:"https://www.linkedin.com/in/adithya-angadi-0825a32a6",
+    github:"https://github.com/Adithya-a18",
   },
   {
     name:"Vikas Uttangi",
-    role:"Frontend Development",
+    role:"Firmware Developement",
     color:"#6ee7b7",
     imageUrl:"/team/vikas-u.jpg",
-    linkedin:"#",
+    linkedin:"https://www.linkedin.com/in/vikas-uttangi-1a0298387?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
     github:"#",
   },
 ];
@@ -745,9 +745,20 @@ export default function Home() {
             </Box>
           </motion.div>
 
-          <Grid container spacing={2.5}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
+                lg: "repeat(6, minmax(0, 1fr))",
+              },
+              gap: 2.5,
+            }}
+          >
             {TEAM.map((m, i) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={m.name}>
+              <Box key={m.name}>
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }} custom={i*0.12}>
                   <Box
                     className="team-card"
@@ -871,9 +882,9 @@ export default function Home() {
                     </Box>
                   </Box>
                 </motion.div>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
