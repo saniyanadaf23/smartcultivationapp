@@ -80,7 +80,7 @@ const TEAM = [
     name:"Vikas Uttangi",
     role:"Frontend Development",
     color:"#6ee7b7",
-    imageUrl:"/team/vikas.jpg",
+    imageUrl:"/team/vikas-u.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -741,9 +741,7 @@ export default function Home() {
               <Typography className="fs" sx={{ fontSize:{ xs:17,md:20 },color:"rgba(232,245,233,0.78)",lineHeight:1.7,maxWidth:1180,mx:"auto",mb:1.5 }}>
                 Meet our outstanding team, a synergy of talent, creativity, and dedication, crafting success together with passion and innovation.
               </Typography>
-              <Typography className="fm" sx={{ fontSize:11,color:"rgba(74,222,128,0.56)",letterSpacing:0.8 }}>
-                Add your own photos in `public/team/` and update the `imageUrl` values in the team list.
-              </Typography>
+            
             </Box>
           </motion.div>
 
