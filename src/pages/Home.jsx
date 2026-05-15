@@ -749,7 +749,7 @@ export default function Home() {
 
           <Grid container spacing={2.5}>
             {TEAM.map((m, i) => (
-              <Grid item xs={12} sm={6} lg={3} key={m.name}>
+              <Grid item xs={12} sm={6} md={4} lg={2} key={m.name}>
                 <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }} custom={i*0.12}>
                   <Box
                     className="team-card"
