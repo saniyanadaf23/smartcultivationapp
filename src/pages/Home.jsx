@@ -35,41 +35,14 @@ const STACK = [
   { icon:"🔐",  name:"JWT Auth",      tag:"Security" },
 ];
 
-const DOWNLOADS = [
-  {
-    key:"windows",
-    icon:"🪟",
-    name:"Windows App",
-    subtitle:"Desktop installer for Windows",
-    href: process.env.REACT_APP_WINDOWS_DOWNLOAD_URL || "/downloads/smartcultivation-windows.zip",
-    hint: process.env.REACT_APP_WINDOWS_DOWNLOAD_URL || "public/downloads/smartcultivation-windows.zip",
-    cta:"Download for Windows",
-    color:"#7dd3fc",
-  },
-  {
-    key:"android",
-    icon:"🤖",
-    name:"Android App",
-    subtitle:"APK package for Android devices",
-    href: process.env.REACT_APP_ANDROID_DOWNLOAD_URL || "/downloads/smartcultivation-android.apk",
-    hint: process.env.REACT_APP_ANDROID_DOWNLOAD_URL || "public/downloads/smartcultivation-android.apk",
-    cta:"Download for Android",
-    color:"#4ade80",
-  },
-];
-
-function isExternalDownload(href) {
-  return /^https?:\/\//i.test(href);
-}
-
 const TEAM = [
   {
     name:"Saniya",
     role:"Frontend Developer",
     color:"#4ade80",
     imageUrl:"/team/saniya.jpg",
-    linkedin:"#",
-    github:"#",
+    linkedin:"https://linkedin.com/in/saniya-nadaf-025483291",
+    github:"https://github.com/saniyanadaf23",
   },
   {
     name:"Unnati",
@@ -84,8 +57,8 @@ const TEAM = [
     role:"Backend Development",
     color:"#6ee7b7",
     imageUrl:"/team/darshan.jpg",
-    linkedin:"#",
-    github:"#",
+    linkedin:"https://www.linkedin.com/in/darshan-janganure-8ba493214/",
+    github:"https://github.com/Darshan-Dj-03",
   },
   {
     name:"Vikas",
@@ -100,6 +73,14 @@ const TEAM = [
     role:"DevOps & Deployment",
     color:"#bbf7d0",
     imageUrl:"/team/aditya.jpg",
+    linkedin:"#",
+    github:"#",
+  },
+  {
+    name:"Vikas Uttangi",
+    role:"Frontend Development",
+    color:"#6ee7b7",
+    imageUrl:"/team/vikas.jpg",
     linkedin:"#",
     github:"#",
   },
@@ -197,7 +178,6 @@ function GitHubIcon() {
 ───────────────────────────────────────────── */
 export default function Home() {
   const navigate = useNavigate();
-  const [downloadAvailability, setDownloadAvailability] = useState({});
 
   /* cursor glow */
   const mouseX = useMotionValue(400);
@@ -261,40 +241,6 @@ export default function Home() {
     const drift = +(Math.sin(tick * 0.7 + i * 1.3) * 0.4).toFixed(1);
     return (s.value + drift).toFixed(i === 3 ? 0 : 1);
   });
-
-  useEffect(() => {
-    let active = true;
-
-    const checkDownloads = async () => {
-      const results = {};
-
-      await Promise.all(
-        DOWNLOADS.map(async (item) => {
-          if (isExternalDownload(item.href)) {
-            results[item.key] = true;
-            return;
-          }
-
-          try {
-            const response = await fetch(item.href, { method: "HEAD" });
-            results[item.key] = response.ok;
-          } catch {
-            results[item.key] = false;
-          }
-        })
-      );
-
-      if (active) {
-        setDownloadAvailability(results);
-      }
-    };
-
-    checkDownloads();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <Box sx={{ background: "#020c04", color: "#e8f5e9", overflowX: "hidden" }}>
@@ -367,14 +313,14 @@ export default function Home() {
             <Box sx={{ width:36,height:36,borderRadius:"10px",background:"linear-gradient(135deg,#1a5c3a,#4ade80)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:"0 4px 18px rgba(74,222,128,0.3)" }}>🌿</Box>
           </motion.div>
           <Box>
-            <Typography className="fd" sx={{ fontSize:17,fontWeight:700,color:"#e8f5e9",lineHeight:1 }}>SmartCultivation</Typography>
+            <Typography className="fd" sx={{ fontSize:17,fontWeight:700,color:"#e8f5e9",lineHeight:1 }}>Smart Grow</Typography>
             <Typography className="fm" sx={{ fontSize:8,color:"rgba(74,222,128,0.5)",letterSpacing:2,textTransform:"uppercase" }}>BCA Internship · 2026</Typography>
           </Box>
         </Box>
 
         {/* nav links */}
         <Box sx={{ display:{ xs:"none",md:"flex" }, gap:0.5 }}>
-          {[["Overview","#overview"],["How It Works","#how"],["Tech Stack","#tech"],["Downloads","#downloads"],["Team","#team"]].map(([label, href]) => (
+          {[["Overview","#overview"],["How It Works","#how"],["Tech Stack","#tech"],["Team","#team"]].map(([label, href]) => (
             <Button key={label} component="a" href={href} className="nav-link"
               sx={{ position:"relative",color:"rgba(232,245,233,0.55)",fontSize:13,fontFamily:"'Outfit',sans-serif",letterSpacing:0.3,textTransform:"none",px:2,
                 "&:hover":{ color:"#4ade80",background:"transparent" } }}>
@@ -755,98 +701,6 @@ export default function Home() {
               </motion.div>
             ))}
           </Box>
-        </Container>
-      </Box>
-
-      <Box id="downloads" sx={{ py:{ xs:10,md:14 },borderTop:"1px solid rgba(74,222,128,0.06)",position:"relative",overflow:"hidden" }}>
-        <Box sx={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:680,height:680,borderRadius:"50%",background:"radial-gradient(circle,rgba(45,106,79,0.09) 0%,transparent 70%)",pointerEvents:"none" }} />
-        <Container maxWidth="xl" sx={{ position:"relative",zIndex:1,px:{ xs:3,md:8 } }}>
-          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }}>
-            <Typography className="fm" sx={{ fontSize:10,color:"#4ade80",letterSpacing:3,textTransform:"uppercase",mb:1.5,textAlign:"center" }}>Downloads</Typography>
-            <Typography className="fd" sx={{ fontSize:{ xs:"2.2rem",md:"3.5rem" },fontWeight:700,lineHeight:1.1,textAlign:"center",mb:2 }}>
-              Get the app on your devices.
-            </Typography>
-            <Typography className="fs" sx={{ maxWidth:880,mx:"auto",textAlign:"center",fontSize:{ xs:14,md:17 },color:"rgba(232,245,233,0.42)",lineHeight:1.9,mb:{ xs:5,md:7 } }}>
-              Download the SmartCultivation application for Windows or Android before login. You can link these buttons to hosted installer files or place the builds inside the public downloads folder.
-            </Typography>
-          </motion.div>
-
-          <Grid container spacing={2.5}>
-            {DOWNLOADS.map((item, i) => (
-              <Grid item xs={12} md={6} key={item.key}>
-                {(() => {
-                  const isExternal = isExternalDownload(item.href);
-                  const isReady = downloadAvailability[item.key] ?? isExternal;
-
-                  return (
-                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once:true }} custom={i * 0.15}>
-                  <Box sx={{ p:{ xs:3,md:3.5 },borderRadius:"18px",border:"1px solid rgba(74,222,128,0.1)",background:"rgba(255,255,255,0.015)",backdropFilter:"blur(12px)",height:"100%",display:"flex",flexDirection:"column" }}>
-                    <Box sx={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",mb:2.5,gap:2 }}>
-                      <Box>
-                        <Typography className="fm" sx={{ fontSize:10,color:"rgba(232,245,233,0.32)",letterSpacing:1.6,textTransform:"uppercase",mb:0.8 }}>
-                          Application Download
-                        </Typography>
-                        <Typography className="fs" sx={{ fontSize:{ xs:22,md:26 },fontWeight:600,color:"#e8f5e9",mb:0.7 }}>
-                          {item.name}
-                        </Typography>
-                        <Typography className="fs" sx={{ fontSize:14,color:"rgba(232,245,233,0.45)" }}>
-                          {item.subtitle}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ width:54,height:54,borderRadius:"16px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,background:`${item.color}18`,border:`1px solid ${item.color}33`,flexShrink:0 }}>
-                        {item.icon}
-                      </Box>
-                    </Box>
-
-                    <Box sx={{ p:2,borderRadius:"12px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(74,222,128,0.08)",mb:2.5 }}>
-                      <Typography className="fm" sx={{ fontSize:10,color:"rgba(232,245,233,0.28)",letterSpacing:1.4,textTransform:"uppercase",mb:0.9 }}>
-                        Current Source
-                      </Typography>
-                      <Typography className="fm" sx={{ fontSize:12,color:item.color,wordBreak:"break-all" }}>
-                        {item.hint}
-                      </Typography>
-                    </Box>
-
-                    <Typography className="fs" sx={{ fontSize:13,color:"rgba(232,245,233,0.4)",lineHeight:1.8,mb:3,flex:1 }}>
-                      {isReady
-                        ? "The button will download the installer directly. For local builds, place the file in the matching public/downloads path."
-                        : "This build file is not present yet. Add it to the matching public/downloads path or provide a hosted direct-download URL."}
-                    </Typography>
-
-                    <Button
-                      {...(isReady
-                        ? {
-                            component: "a",
-                            href: item.href,
-                            ...(isExternal ? { target: "_blank", rel: "noreferrer" } : { download: true }),
-                          }
-                        : {})}
-                      disabled={!isReady}
-                      sx={{
-                        alignSelf:"flex-start",
-                        px:2.5,
-                        py:1.1,
-                        borderRadius:"10px",
-                        textTransform:"none",
-                        fontWeight:500,
-                        color:item.color,
-                        border:`1px solid ${item.color}40`,
-                        "&:hover":{ background:`${item.color}12` },
-                        "&.Mui-disabled": {
-                          color:"rgba(232,245,233,0.28)",
-                          borderColor:"rgba(232,245,233,0.12)",
-                        },
-                      }}
-                    >
-                      {isReady ? item.cta : `${item.name} not added yet`}
-                    </Button>
-                  </Box>
-                </motion.div>
-                  );
-                })()}
-              </Grid>
-            ))}
-          </Grid>
         </Container>
       </Box>
 
