@@ -82,7 +82,7 @@ const TEAM = [
     color:"#6ee7b7",
     imageUrl:"/team/vikas-u.jpg",
     linkedin:"https://www.linkedin.com/in/vikas-uttangi-1a0298387?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
-    github:"#",
+    github:"https://github.com/vikasuttangi",
   },
 ];
 
