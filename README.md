@@ -241,16 +241,6 @@ This project is for **academic and educational purposes only**.
 
 ---
 
-## ⭐ Show Your Support
-
-If you like this project:
-
-👉 Star ⭐ the repo
-👉 Fork 🍴 it
-👉 Contribute 💡
-
----
-
 ## 💡 Final Thought
 
 This project is a **complete real-world IoT system** combining:
