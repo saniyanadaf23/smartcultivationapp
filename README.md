@@ -232,7 +232,6 @@ PORT=5000
 ## 👨‍💻 Contributors
 
 - Darshan Janganure
-- Pooja Madiwalar
 
 ---
 
