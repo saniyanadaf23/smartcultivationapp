@@ -144,17 +144,7 @@ It connects:
 
 ---
 
-## 📸 Screenshots (Add Yours)
 
-> Add screenshots in a `/screenshots` folder and link them here
-
-```
-/screenshots/dashboard.png
-/screenshots/rules.png
-/screenshots/device-status.png
-```
-
----
 
 ## 🛠️ Setup Guide
 
